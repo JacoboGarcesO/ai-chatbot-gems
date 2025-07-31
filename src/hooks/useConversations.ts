@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
-import type { Conversation } from '../types';
-import { conversationsAPI } from '../services/api';
+import type { Conversation, Message } from '../types';
+import { conversationsAPI, aiAPI } from '../services/api';
 
 interface UseConversationsOptions {
   filters?: {
@@ -68,6 +68,63 @@ export const useConversations = (options: UseConversationsOptions = {}) => {
     }
   }, []);
 
+  const sendAIMessage = useCallback(async (conversationId: string, prompt: string, context?: string) => {
+    try {
+      const message = await conversationsAPI.sendAIMessage(conversationId, prompt, context);
+      // Update the conversation's last message
+      setConversations(prev =>
+        prev.map(conv =>
+          conv.id === conversationId
+            ? {
+              ...conv,
+              last_message: message.content,
+              last_timestamp: message.timestamp
+            }
+            : conv
+        )
+      );
+      return message;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error sending AI message');
+      throw err;
+    }
+  }, []);
+
+  const markAsRead = useCallback(async (conversationId: string) => {
+    try {
+      const success = await conversationsAPI.markAsRead(conversationId);
+      return success;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error marking as read');
+      return false;
+    }
+  }, []);
+
+  const searchConversations = useCallback(async (query: string) => {
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await conversationsAPI.searchConversations(query);
+      setConversations(data);
+      return data;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error searching conversations');
+      return [];
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const askAI = useCallback(async (question: string, context?: string) => {
+    try {
+      const response = await aiAPI.askAI(question, context);
+      return response;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error asking AI');
+      throw err;
+    }
+  }, []);
+
   useEffect(() => {
     loadConversations();
   }, [loadConversations]);
@@ -79,5 +136,9 @@ export const useConversations = (options: UseConversationsOptions = {}) => {
     loadConversations,
     toggleAI,
     sendMessage,
+    sendAIMessage,
+    markAsRead,
+    searchConversations,
+    askAI,
   };
 }; 

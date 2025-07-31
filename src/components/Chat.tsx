@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Send, Bot, User, ToggleLeft, ToggleRight, MessageSquare } from 'lucide-react';
+import { Send, Bot, User, ToggleLeft, ToggleRight, MessageSquare, Sparkles, Eye } from 'lucide-react';
 import { format } from 'date-fns';
 import { enUS } from 'date-fns/locale';
 import type { Conversation, Message } from '../types';
@@ -14,11 +14,15 @@ const Chat: React.FC<ChatProps> = ({ conversation }) => {
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
+  const [aiPrompt, setAiPrompt] = useState('');
+  const [showAiInput, setShowAiInput] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (conversation) {
       loadMessages();
+      markAsRead();
     }
   }, [conversation]);
 
@@ -31,12 +35,24 @@ const Chat: React.FC<ChatProps> = ({ conversation }) => {
 
     try {
       setLoading(true);
+      setError(null);
       const data = await conversationsAPI.getMessageHistory(conversation.id);
       setMessages(data);
     } catch (error) {
       console.error('Error loading messages:', error);
+      setError('Error loading messages');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const markAsRead = async () => {
+    if (!conversation) return;
+
+    try {
+      await conversationsAPI.markAsRead(conversation.id);
+    } catch (error) {
+      console.error('Error marking as read:', error);
     }
   };
 
@@ -49,11 +65,35 @@ const Chat: React.FC<ChatProps> = ({ conversation }) => {
 
     try {
       setSending(true);
+      setError(null);
       const sentMessage = await conversationsAPI.sendHumanMessage(conversation.id, newMessage.trim());
       setMessages(prev => [...prev, sentMessage]);
       setNewMessage('');
     } catch (error) {
       console.error('Error sending message:', error);
+      setError('Error sending message');
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const handleSendAIMessage = async () => {
+    if (!conversation || !aiPrompt.trim() || sending) return;
+
+    try {
+      setSending(true);
+      setError(null);
+      const sentMessage = await conversationsAPI.sendAIMessage(
+        conversation.id,
+        aiPrompt.trim(),
+        'Clínica médica'
+      );
+      setMessages(prev => [...prev, sentMessage]);
+      setAiPrompt('');
+      setShowAiInput(false);
+    } catch (error) {
+      console.error('Error sending AI message:', error);
+      setError('Error sending AI message');
     } finally {
       setSending(false);
     }
@@ -63,6 +103,7 @@ const Chat: React.FC<ChatProps> = ({ conversation }) => {
     if (!conversation) return;
 
     try {
+      setError(null);
       const success = await conversationsAPI.toggleAI(conversation.id, !conversation.ai_active);
       if (success) {
         // Update the conversation object
@@ -72,6 +113,7 @@ const Chat: React.FC<ChatProps> = ({ conversation }) => {
       }
     } catch (error) {
       console.error('Error toggling AI:', error);
+      setError('Error toggling AI');
     }
   };
 
@@ -145,6 +187,9 @@ const Chat: React.FC<ChatProps> = ({ conversation }) => {
               {conversation.customer?.name || 'Unknown Customer'}
             </h3>
             <p className="text-sm text-gray-500 dark:text-gray-400">
+              {conversation.customer?.phone || conversation.id}
+            </p>
+            <p className="text-xs text-gray-400 dark:text-gray-500">
               {conversation.status === 'open' ? 'Active conversation' :
                 conversation.status === 'closed' ? 'Closed conversation' : 'Pending conversation'}
             </p>
@@ -153,10 +198,17 @@ const Chat: React.FC<ChatProps> = ({ conversation }) => {
 
         <div className="flex items-center space-x-2">
           <button
+            onClick={() => setShowAiInput(!showAiInput)}
+            className="flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 hover:bg-purple-200 dark:hover:bg-purple-800 transition-colors"
+          >
+            <Sparkles className="h-4 w-4" />
+            <span>AI Message</span>
+          </button>
+          <button
             onClick={handleToggleAI}
             className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${conversation.ai_active
-                ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 hover:bg-green-200 dark:hover:bg-green-800'
-                : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'
+              ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 hover:bg-green-200 dark:hover:bg-green-800'
+              : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'
               }`}
           >
             {conversation.ai_active ? (
@@ -173,6 +225,47 @@ const Chat: React.FC<ChatProps> = ({ conversation }) => {
           </button>
         </div>
       </div>
+
+      {/* Error Message */}
+      {error && (
+        <div className="p-3 bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200 text-sm border-b border-red-200 dark:border-red-800">
+          {error}
+        </div>
+      )}
+
+      {/* AI Input */}
+      {showAiInput && (
+        <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-purple-50 dark:bg-purple-900/20">
+          <div className="flex space-x-2">
+            <input
+              type="text"
+              value={aiPrompt}
+              onChange={(e) => setAiPrompt(e.target.value)}
+              onKeyPress={(e) => e.key === 'Enter' && handleSendAIMessage()}
+              placeholder="Describe what you want the AI to say..."
+              disabled={sending}
+              className="flex-1 px-4 py-2 border border-purple-300 dark:border-purple-600 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent disabled:opacity-50 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400"
+            />
+            <button
+              onClick={handleSendAIMessage}
+              disabled={!aiPrompt.trim() || sending}
+              className="px-4 py-2 bg-purple-600 dark:bg-purple-500 text-white rounded-md hover:bg-purple-700 dark:hover:bg-purple-600 focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              {sending ? (
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+              ) : (
+                <Sparkles className="h-4 w-4" />
+              )}
+            </button>
+            <button
+              onClick={() => setShowAiInput(false)}
+              className="px-4 py-2 bg-gray-600 dark:bg-gray-500 text-white rounded-md hover:bg-gray-700 dark:hover:bg-gray-600 transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-white dark:bg-gray-800">

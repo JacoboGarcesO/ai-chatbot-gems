@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Search, Filter, MessageSquare, Clock, CheckCircle, AlertCircle } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Search, Filter, MessageSquare, Clock, CheckCircle, AlertCircle, RefreshCw } from 'lucide-react';
 import { format } from 'date-fns';
 import { enUS } from 'date-fns/locale';
 import type { Conversation } from '../types';
@@ -18,33 +18,53 @@ const ConversationsList: React.FC<ConversationsListProps> = ({
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    loadConversations();
-  }, []);
-
-  const loadConversations = async () => {
+  const loadConversations = useCallback(async (search?: string, status?: string) => {
     try {
       setLoading(true);
-      const data = await conversationsAPI.listConversations();
+      setError(null);
+
+      let data: Conversation[];
+
+      if (search && search.trim()) {
+        // Use API search if there's a search term
+        data = await conversationsAPI.searchConversations(search.trim());
+      } else {
+        // Use regular list with filters
+        const filters: { status?: string; customer?: string } = {};
+        if (status && status !== 'all') {
+          filters.status = status;
+        }
+        data = await conversationsAPI.listConversations(filters);
+      }
+
       setConversations(data);
     } catch (error) {
       console.error('Error loading conversations:', error);
+      setError('Error loading conversations');
     } finally {
       setLoading(false);
     }
+  }, []);
+
+  // Debounced search effect
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      loadConversations(searchTerm, statusFilter);
+    }, 500);
+
+    return () => clearTimeout(timeoutId);
+  }, [searchTerm, statusFilter, loadConversations]);
+
+  // Initial load
+  useEffect(() => {
+    loadConversations();
+  }, [loadConversations]);
+
+  const handleRefresh = () => {
+    loadConversations(searchTerm, statusFilter);
   };
-
-  const filteredConversations = conversations.filter((conversation) => {
-    const matchesSearch = conversation.customer?.name
-      .toLowerCase()
-      .includes(searchTerm.toLowerCase()) ||
-      conversation.last_message?.toLowerCase().includes(searchTerm.toLowerCase());
-
-    const matchesStatus = statusFilter === 'all' || conversation.status === statusFilter;
-
-    return matchesSearch && matchesStatus;
-  });
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -85,19 +105,28 @@ const ConversationsList: React.FC<ConversationsListProps> = ({
     }
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 dark:border-blue-400"></div>
-      </div>
-    );
-  }
-
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
       {/* Header */}
       <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-        <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Conversations</h2>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Conversations</h2>
+          <button
+            onClick={handleRefresh}
+            disabled={loading}
+            className="p-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 disabled:opacity-50 transition-colors"
+            title="Refresh conversations"
+          >
+            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+          </button>
+        </div>
+
+        {/* Error Message */}
+        {error && (
+          <div className="mb-4 p-3 bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200 text-sm rounded-md border border-red-200 dark:border-red-800">
+            {error}
+          </div>
+        )}
 
         {/* Search and Filters */}
         <div className="flex flex-col sm:flex-row gap-3">
@@ -105,7 +134,7 @@ const ConversationsList: React.FC<ConversationsListProps> = ({
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 h-4 w-4" />
             <input
               type="text"
-              placeholder="Search conversations..."
+              placeholder="Search conversations or messages..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400"
@@ -130,12 +159,18 @@ const ConversationsList: React.FC<ConversationsListProps> = ({
 
       {/* Conversations List */}
       <div className="divide-y divide-gray-200 dark:divide-gray-700 max-h-96 overflow-y-auto">
-        {filteredConversations.length === 0 ? (
+        {loading ? (
+          <div className="flex items-center justify-center h-32">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 dark:border-blue-400"></div>
+          </div>
+        ) : conversations.length === 0 ? (
           <div className="p-8 text-center text-gray-500 dark:text-gray-400">
-            {loading ? 'Loading conversations...' : 'No conversations found'}
+            {searchTerm || statusFilter !== 'all'
+              ? 'No conversations match your search criteria'
+              : 'No conversations found'}
           </div>
         ) : (
-          filteredConversations.map((conversation) => (
+          conversations.map((conversation) => (
             <div
               key={conversation.id}
               onClick={() => onSelectConversation(conversation)}
@@ -153,6 +188,12 @@ const ConversationsList: React.FC<ConversationsListProps> = ({
                       <span className="ml-1">{getStatusText(conversation.status)}</span>
                     </span>
                   </div>
+
+                  {conversation.customer?.phone && (
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">
+                      {conversation.customer.phone}
+                    </p>
+                  )}
 
                   {conversation.last_message && (
                     <p className="text-sm text-gray-600 dark:text-gray-300 truncate mb-2">
