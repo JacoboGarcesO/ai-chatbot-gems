@@ -1,9 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
-import type { Mensaje } from '../types';
-import { conversacionesAPI } from '../services/api';
+import type { Message } from '../types';
+import { conversationsAPI } from '../services/api';
 
-export const useMessages = (conversationId: string | null) => {
-  const [messages, setMessages] = useState<Mensaje[]>([]);
+export const useMessages = (conversationId: string | undefined) => {
+  const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -13,7 +13,7 @@ export const useMessages = (conversationId: string | null) => {
     try {
       setLoading(true);
       setError(null);
-      const data = await conversacionesAPI.obtenerHistorialMensajes(conversationId);
+      const data = await conversationsAPI.getMessageHistory(conversationId);
       setMessages(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error loading messages');
@@ -26,7 +26,7 @@ export const useMessages = (conversationId: string | null) => {
     if (!conversationId) return null;
 
     try {
-      const message = await conversacionesAPI.enviarMensajeHumano(conversationId, content);
+      const message = await conversationsAPI.sendHumanMessage(conversationId, content);
       setMessages(prev => [...prev, message]);
       return message;
     } catch (err) {
@@ -35,7 +35,7 @@ export const useMessages = (conversationId: string | null) => {
     }
   }, [conversationId]);
 
-  const addMessage = useCallback((message: Mensaje) => {
+  const addMessage = useCallback((message: Message) => {
     setMessages(prev => [...prev, message]);
   }, []);
 

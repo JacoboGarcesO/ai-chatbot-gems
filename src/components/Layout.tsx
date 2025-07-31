@@ -14,10 +14,10 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const location = useLocation();
 
   const navigation = [
-    { name: 'Conversaciones', href: '/', icon: MessageSquare },
-    { name: 'Base de Conocimiento', href: '/base-conocimiento', icon: Brain },
-    { name: 'Reportes', href: '/reportes', icon: BarChart3 },
-    { name: 'Configuración', href: '/configuracion', icon: Settings },
+    { name: 'Conversations', href: '/', icon: MessageSquare },
+    { name: 'Knowledge Base', href: '/knowledge-base', icon: Brain },
+    { name: 'Reports', href: '/reports', icon: BarChart3 },
+    { name: 'Settings', href: '/settings', icon: Settings },
   ];
 
   // Dark mode toggle
@@ -48,7 +48,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-white dark:bg-dark-800 border-r border-gray-200 dark:border-dark-700 transform transition-transform duration-300 ease-in-out ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         } lg:translate-x-0 lg:inset-0`}>
         <div className="flex items-center justify-between h-16 px-4 border-b border-gray-200 dark:border-dark-700">
-          <Logo size="md" />
+          <Logo size="sm" />
           <button
             onClick={() => setSidebarOpen(false)}
             className="lg:hidden p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 dark:hover:bg-dark-700"
@@ -66,8 +66,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                   key={item.name}
                   to={item.href}
                   className={`group flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors ${isActive
-                      ? 'bg-brand-primary text-white'
-                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-dark-700'
+                    ? 'bg-brand-primary text-white'
+                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-dark-700'
                     }`}
                   onClick={() => setSidebarOpen(false)}
                 >

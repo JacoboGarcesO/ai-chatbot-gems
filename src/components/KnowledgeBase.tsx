@@ -1,18 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Edit, Trash2, Search, Tag, Brain, Save, X } from 'lucide-react';
-import { BaseConocimiento } from '../types';
-import { baseConocimientoAPI } from '../services/api';
+import type { KnowledgeBase as KnowledgeBaseType } from '../types';
+import { knowledgeBaseAPI } from '../services/api';
+import { Card, CardHeader, CardBody } from './ui/Card';
+import Button from './ui/Button';
+import Input from './ui/Input';
+import Badge from './ui/Badge';
+import LoadingSpinner from './ui/LoadingSpinner';
 
 const KnowledgeBase: React.FC = () => {
-  const [entries, setEntries] = useState<BaseConocimiento[]>([]);
+  const [entries, setEntries] = useState<KnowledgeBaseType[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [showForm, setShowForm] = useState(false);
-  const [editingEntry, setEditingEntry] = useState<BaseConocimiento | null>(null);
+  const [editingEntry, setEditingEntry] = useState<KnowledgeBaseType | null>(null);
   const [formData, setFormData] = useState({
-    pregunta_clave: '',
-    respuesta: '',
-    activo: true,
+    key_question: '',
+    answer: '',
+    active: true,
     tags: [] as string[],
   });
 
@@ -23,7 +28,7 @@ const KnowledgeBase: React.FC = () => {
   const loadEntries = async () => {
     try {
       setLoading(true);
-      const data = await baseConocimientoAPI.listarBaseConocimiento();
+      const data = await knowledgeBaseAPI.listKnowledgeBase();
       setEntries(data);
     } catch (error) {
       console.error('Error loading knowledge base:', error);
@@ -33,8 +38,8 @@ const KnowledgeBase: React.FC = () => {
   };
 
   const filteredEntries = entries.filter((entry) =>
-    entry.pregunta_clave.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    entry.respuesta.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    entry.key_question.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    entry.answer.toLowerCase().includes(searchTerm.toLowerCase()) ||
     entry.tags?.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
@@ -43,11 +48,11 @@ const KnowledgeBase: React.FC = () => {
 
     try {
       if (editingEntry) {
-        await baseConocimientoAPI.actualizarEntrada(editingEntry.id, formData);
+        await knowledgeBaseAPI.updateEntry(editingEntry.id, formData);
       } else {
-        await baseConocimientoAPI.crearEntrada({
+        await knowledgeBaseAPI.createEntry({
           ...formData,
-          id_empresa: 'empresa1', // Mock empresa ID
+          company_id: 'company1', // Mock company ID
         });
       }
 
@@ -58,21 +63,21 @@ const KnowledgeBase: React.FC = () => {
     }
   };
 
-  const handleEdit = (entry: BaseConocimiento) => {
+  const handleEdit = (entry: KnowledgeBaseType) => {
     setEditingEntry(entry);
     setFormData({
-      pregunta_clave: entry.pregunta_clave,
-      respuesta: entry.respuesta,
-      activo: entry.activo,
+      key_question: entry.key_question,
+      answer: entry.answer,
+      active: entry.active,
       tags: entry.tags || [],
     });
     setShowForm(true);
   };
 
   const handleDelete = async (id: string) => {
-    if (window.confirm('¿Estás seguro de que quieres eliminar esta entrada?')) {
+    if (window.confirm('Are you sure you want to delete this entry?')) {
       try {
-        await baseConocimientoAPI.eliminarEntrada(id);
+        await knowledgeBaseAPI.deleteEntry(id);
         loadEntries();
       } catch (error) {
         console.error('Error deleting entry:', error);
@@ -82,9 +87,9 @@ const KnowledgeBase: React.FC = () => {
 
   const resetForm = () => {
     setFormData({
-      pregunta_clave: '',
-      respuesta: '',
-      activo: true,
+      key_question: '',
+      answer: '',
+      active: true,
       tags: [],
     });
     setEditingEntry(null);
@@ -95,7 +100,7 @@ const KnowledgeBase: React.FC = () => {
     if (tag.trim() && !formData.tags.includes(tag.trim())) {
       setFormData(prev => ({
         ...prev,
-        tags: [...prev.tags, tag.trim()],
+        tags: [...prev.tags, tag.trim()]
       }));
     }
   };
@@ -103,249 +108,215 @@ const KnowledgeBase: React.FC = () => {
   const removeTag = (tagToRemove: string) => {
     setFormData(prev => ({
       ...prev,
-      tags: prev.tags.filter(tag => tag !== tagToRemove),
+      tags: prev.tags.filter(tag => tag !== tagToRemove)
     }));
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-      </div>
-    );
+    return <LoadingSpinner />;
   }
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Base de Conocimiento</h1>
-          <p className="text-gray-600">Gestiona las respuestas automáticas del bot de IA</p>
+        <div className="flex items-center space-x-3">
+          <Brain className="h-8 w-8 text-blue-600 dark:text-blue-400" />
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Knowledge Base</h1>
         </div>
-        <button
+        <Button
           onClick={() => setShowForm(true)}
-          className="btn-primary flex items-center space-x-2"
+          className="flex items-center space-x-2"
         >
           <Plus className="h-4 w-4" />
-          <span>Nueva Entrada</span>
-        </button>
+          <span>Add Entry</span>
+        </Button>
       </div>
 
       {/* Search */}
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-        <input
+        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 h-4 w-4" />
+        <Input
           type="text"
-          placeholder="Buscar en la base de conocimiento..."
+          placeholder="Search knowledge base..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          className="pl-10"
         />
       </div>
 
       {/* Form Modal */}
       {showForm && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-gray-900">
-                {editingEntry ? 'Editar Entrada' : 'Nueva Entrada'}
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
+                {editingEntry ? 'Edit Entry' : 'Add New Entry'}
               </h2>
               <button
                 onClick={resetForm}
-                className="text-gray-400 hover:text-gray-600"
+                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
               >
-                <X className="h-5 w-5" />
+                <X className="h-6 w-6" />
               </button>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Pregunta Clave
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Key Question
                 </label>
-                <input
+                <Input
                   type="text"
-                  value={formData.pregunta_clave}
-                  onChange={(e) => setFormData(prev => ({ ...prev, pregunta_clave: e.target.value }))}
-                  placeholder="Ej: precio, garantía, envío..."
-                  className="input-field"
+                  value={formData.key_question}
+                  onChange={(e) => setFormData(prev => ({ ...prev, key_question: e.target.value }))}
+                  placeholder="Enter the key question or topic..."
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Respuesta
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Answer
                 </label>
                 <textarea
-                  value={formData.respuesta}
-                  onChange={(e) => setFormData(prev => ({ ...prev, respuesta: e.target.value }))}
-                  placeholder="Respuesta que dará el bot..."
-                  rows={4}
-                  className="input-field"
+                  value={formData.answer}
+                  onChange={(e) => setFormData(prev => ({ ...prev, answer: e.target.value }))}
+                  placeholder="Enter the answer or response..."
                   required
+                  rows={4}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Etiquetas
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Tags
                 </label>
                 <div className="flex flex-wrap gap-2 mb-2">
-                  {formData.tags.map((tag) => (
-                    <span
-                      key={tag}
-                      className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
-                    >
-                      {tag}
+                  {formData.tags.map((tag, index) => (
+                    <Badge key={index} variant="default" className="flex items-center space-x-1">
+                      <Tag className="h-3 w-3" />
+                      <span>{tag}</span>
                       <button
                         type="button"
                         onClick={() => removeTag(tag)}
-                        className="ml-1 text-blue-600 hover:text-blue-800"
+                        className="ml-1 hover:text-red-500"
                       >
                         <X className="h-3 w-3" />
                       </button>
-                    </span>
+                    </Badge>
                   ))}
                 </div>
-                <div className="flex space-x-2">
-                  <input
-                    type="text"
-                    placeholder="Agregar etiqueta..."
-                    className="flex-1 input-field"
-                    onKeyPress={(e) => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault();
-                        addTag((e.target as HTMLInputElement).value);
-                        (e.target as HTMLInputElement).value = '';
-                      }
-                    }}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const input = document.querySelector('input[placeholder="Agregar etiqueta..."]') as HTMLInputElement;
-                      if (input) {
-                        addTag(input.value);
-                        input.value = '';
-                      }
-                    }}
-                    className="btn-secondary"
-                  >
-                    Agregar
-                  </button>
-                </div>
+                <Input
+                  type="text"
+                  placeholder="Add a tag and press Enter..."
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      addTag(e.currentTarget.value);
+                      e.currentTarget.value = '';
+                    }
+                  }}
+                />
               </div>
 
-              <div className="flex items-center">
+              <div className="flex items-center space-x-2">
                 <input
                   type="checkbox"
-                  id="activo"
-                  checked={formData.activo}
-                  onChange={(e) => setFormData(prev => ({ ...prev, activo: e.target.checked }))}
-                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  id="active"
+                  checked={formData.active}
+                  onChange={(e) => setFormData(prev => ({ ...prev, active: e.target.checked }))}
+                  className="rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500 bg-white dark:bg-gray-700"
                 />
-                <label htmlFor="activo" className="ml-2 text-sm text-gray-700">
-                  Entrada activa
+                <label htmlFor="active" className="text-sm text-gray-700 dark:text-gray-300">
+                  Active
                 </label>
               </div>
 
               <div className="flex justify-end space-x-3 pt-4">
-                <button
+                <Button
                   type="button"
+                  variant="secondary"
                   onClick={resetForm}
-                  className="btn-secondary"
                 >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  className="btn-primary flex items-center space-x-2"
-                >
+                  Cancel
+                </Button>
+                <Button type="submit" className="flex items-center space-x-2">
                   <Save className="h-4 w-4" />
-                  <span>{editingEntry ? 'Actualizar' : 'Crear'}</span>
-                </button>
+                  <span>{editingEntry ? 'Update' : 'Create'}</span>
+                </Button>
               </div>
             </form>
           </div>
         </div>
       )}
 
-      {/* Entries List */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-        <div className="p-4 border-b border-gray-200">
-          <h3 className="text-lg font-medium text-gray-900">
-            Entradas ({filteredEntries.length})
-          </h3>
-        </div>
-
-        <div className="divide-y divide-gray-200">
-          {filteredEntries.length === 0 ? (
-            <div className="p-8 text-center text-gray-500">
-              <Brain className="mx-auto h-12 w-12 text-gray-300 mb-4" />
-              <p>No se encontraron entradas en la base de conocimiento</p>
-            </div>
-          ) : (
-            filteredEntries.map((entry) => (
-              <div key={entry.id} className="p-4 hover:bg-gray-50">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center space-x-2 mb-2">
-                      <h4 className="text-sm font-medium text-gray-900">
-                        {entry.pregunta_clave}
-                      </h4>
-                      {entry.activo ? (
-                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                          Activa
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                          Inactiva
-                        </span>
-                      )}
-                    </div>
-
-                    <p className="text-sm text-gray-600 mb-2">
-                      {entry.respuesta}
-                    </p>
-
-                    {entry.tags && entry.tags.length > 0 && (
-                      <div className="flex flex-wrap gap-1">
-                        {entry.tags.map((tag) => (
-                          <span
-                            key={tag}
-                            className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
-                          >
-                            <Tag className="h-3 w-3 mr-1" />
-                            {tag}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="flex items-center space-x-2 ml-4">
-                    <button
-                      onClick={() => handleEdit(entry)}
-                      className="text-gray-400 hover:text-blue-600"
-                    >
-                      <Edit className="h-4 w-4" />
-                    </button>
-                    <button
-                      onClick={() => handleDelete(entry.id)}
-                      className="text-gray-400 hover:text-red-600"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  </div>
+      {/* Entries Grid */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        {filteredEntries.map((entry) => (
+          <Card key={entry.id} className="hover:shadow-md transition-shadow">
+            <CardHeader>
+              <div className="flex items-start justify-between">
+                <h3 className="font-semibold text-gray-900 dark:text-gray-100 line-clamp-2">
+                  {entry.key_question}
+                </h3>
+                <div className="flex items-center space-x-2">
+                  {entry.active ? (
+                    <Badge variant="success">Active</Badge>
+                  ) : (
+                    <Badge variant="default">Inactive</Badge>
+                  )}
                 </div>
               </div>
-            ))
-          )}
-        </div>
+            </CardHeader>
+            <CardBody>
+              <p className="text-gray-600 dark:text-gray-300 text-sm line-clamp-3 mb-3">
+                {entry.answer}
+              </p>
+
+              {entry.tags && entry.tags.length > 0 && (
+                <div className="flex flex-wrap gap-1 mb-3">
+                  {entry.tags.map((tag, index) => (
+                    <Badge key={index} variant="default" className="text-xs">
+                      {tag}
+                    </Badge>
+                  ))}
+                </div>
+              )}
+
+              <div className="flex justify-end space-x-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handleEdit(entry)}
+                  className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+                >
+                  <Edit className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handleDelete(entry.id)}
+                  className="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+            </CardBody>
+          </Card>
+        ))}
       </div>
+
+      {filteredEntries.length === 0 && !loading && (
+        <div className="text-center py-12">
+          <Brain className="mx-auto h-12 w-12 text-gray-300 dark:text-gray-600 mb-4" />
+          <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">No entries found</h3>
+          <p className="text-gray-500 dark:text-gray-400">
+            {searchTerm ? 'Try adjusting your search terms.' : 'Get started by adding your first knowledge base entry.'}
+          </p>
+        </div>
+      )}
     </div>
   );
 };

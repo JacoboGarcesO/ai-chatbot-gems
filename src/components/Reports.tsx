@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { BarChart3, TrendingUp, Users, MessageSquare, DollarSign, Calendar, Download } from 'lucide-react';
+import { TrendingUp, Users, MessageSquare, DollarSign, Calendar, Download } from 'lucide-react';
 import { format } from 'date-fns';
-import { es } from 'date-fns/locale';
-import { Reporte } from '../types';
-import { reportesAPI } from '../services/api';
+import type { Report } from '../types';
+import { reportsAPI } from '../services/api';
+import { Card, CardHeader, CardBody } from './ui/Card';
+import Button from './ui/Button';
+import LoadingSpinner from './ui/LoadingSpinner';
 
 const Reports: React.FC = () => {
-  const [report, setReport] = useState<Reporte | null>(null);
+  const [report, setReport] = useState<Report | null>(null);
   const [loading, setLoading] = useState(true);
   const [dateRange, setDateRange] = useState({
     startDate: format(new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), 'yyyy-MM-dd'),
@@ -20,7 +22,7 @@ const Reports: React.FC = () => {
   const loadReport = async () => {
     try {
       setLoading(true);
-      const data = await reportesAPI.obtenerReporte(dateRange.startDate, dateRange.endDate);
+      const data = await reportsAPI.getReport(dateRange.startDate, dateRange.endDate);
       setReport(data);
     } catch (error) {
       console.error('Error loading report:', error);
@@ -37,21 +39,21 @@ const Reports: React.FC = () => {
     if (!report) return;
 
     const csvContent = [
-      ['Métrica', 'Valor'],
-      ['Total Conversaciones', report.total_conversaciones.toString()],
-      ['Ventas Cerradas', report.conversaciones_clasificadas.venta_cerrada.toString()],
-      ['Clientes Interesados', report.conversaciones_clasificadas.cliente_interesado.toString()],
-      ['Requiere Seguimiento', report.conversaciones_clasificadas.requiere_seguimiento.toString()],
-      ['Información Solicitada', report.conversaciones_clasificadas.informacion_solicitada.toString()],
-      ['Tiempo Respuesta Promedio (min)', report.tiempo_respuesta_promedio.toString()],
-      ['Satisfacción Cliente', report.satisfaccion_cliente.toString()],
+      ['Metric', 'Value'],
+      ['Total Conversations', report.total_conversations.toString()],
+      ['Closed Sales', report.classified_conversations.closed_sale.toString()],
+      ['Interested Customers', report.classified_conversations.interested_customer.toString()],
+      ['Requires Follow-up', report.classified_conversations.requires_followup.toString()],
+      ['Information Requested', report.classified_conversations.information_requested.toString()],
+      ['Average Response Time (min)', report.average_response_time.toString()],
+      ['Customer Satisfaction', report.customer_satisfaction.toString()],
     ].map(row => row.join(',')).join('\n');
 
     const blob = new Blob([csvContent], { type: 'text/csv' });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `reporte-${dateRange.startDate}-${dateRange.endDate}.csv`;
+    a.download = `report-${dateRange.startDate}-${dateRange.endDate}.csv`;
     a.click();
     window.URL.revokeObjectURL(url);
   };
@@ -59,7 +61,7 @@ const Reports: React.FC = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <LoadingSpinner size="lg" />
       </div>
     );
   }
@@ -69,233 +71,200 @@ const Reports: React.FC = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Reportes y Métricas</h1>
-          <p className="text-gray-600">Análisis del rendimiento del bot y las ventas</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Reports & Metrics</h1>
+          <p className="text-gray-600 dark:text-gray-400">AI bot performance and sales analysis</p>
         </div>
-        <button
+        <Button
           onClick={exportReport}
-          className="btn-secondary flex items-center space-x-2"
+          variant="secondary"
+          className="flex items-center space-x-2"
         >
           <Download className="h-4 w-4" />
-          <span>Exportar</span>
-        </button>
+          <span>Export</span>
+        </Button>
       </div>
 
       {/* Date Range Selector */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-        <div className="flex items-center space-x-4">
-          <Calendar className="h-5 w-5 text-gray-400" />
-          <div className="flex items-center space-x-2">
-            <label className="text-sm font-medium text-gray-700">Desde:</label>
-            <input
-              type="date"
-              value={dateRange.startDate}
-              onChange={(e) => setDateRange(prev => ({ ...prev, startDate: e.target.value }))}
-              className="border border-gray-300 rounded-lg px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
+      <Card>
+        <CardBody>
+          <div className="flex items-center space-x-4">
+            <Calendar className="h-5 w-5 text-gray-400 dark:text-gray-500" />
+            <div className="flex items-center space-x-2">
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">From:</label>
+              <input
+                type="date"
+                value={dateRange.startDate}
+                onChange={(e) => setDateRange(prev => ({ ...prev, startDate: e.target.value }))}
+                className="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+              />
+            </div>
+            <div className="flex items-center space-x-2">
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">To:</label>
+              <input
+                type="date"
+                value={dateRange.endDate}
+                onChange={(e) => setDateRange(prev => ({ ...prev, endDate: e.target.value }))}
+                className="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+              />
+            </div>
           </div>
-          <div className="flex items-center space-x-2">
-            <label className="text-sm font-medium text-gray-700">Hasta:</label>
-            <input
-              type="date"
-              value={dateRange.endDate}
-              onChange={(e) => setDateRange(prev => ({ ...prev, endDate: e.target.value }))}
-              className="border border-gray-300 rounded-lg px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-          </div>
-        </div>
-      </div>
+        </CardBody>
+      </Card>
 
       {report && (
         <>
           {/* Key Metrics */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <div className="flex items-center">
-                <div className="flex-shrink-0">
-                  <MessageSquare className="h-8 w-8 text-blue-500" />
+            <Card>
+              <CardBody>
+                <div className="flex items-center">
+                  <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
+                    <MessageSquare className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+                  </div>
+                  <div className="ml-4">
+                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Conversations</p>
+                    <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{report.total_conversations}</p>
+                  </div>
                 </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-500">Total Conversaciones</p>
-                  <p className="text-2xl font-bold text-gray-900">{report.total_conversaciones}</p>
-                </div>
-              </div>
-            </div>
+              </CardBody>
+            </Card>
 
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <div className="flex items-center">
-                <div className="flex-shrink-0">
-                  <DollarSign className="h-8 w-8 text-green-500" />
+            <Card>
+              <CardBody>
+                <div className="flex items-center">
+                  <div className="p-2 bg-green-100 dark:bg-green-900 rounded-lg">
+                    <DollarSign className="h-6 w-6 text-green-600 dark:text-green-400" />
+                  </div>
+                  <div className="ml-4">
+                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Closed Sales</p>
+                    <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{report.classified_conversations.closed_sale}</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                      {getPercentage(report.classified_conversations.closed_sale, report.total_conversations)}% of total
+                    </p>
+                  </div>
                 </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-500">Ventas Cerradas</p>
-                  <p className="text-2xl font-bold text-gray-900">{report.conversaciones_clasificadas.venta_cerrada}</p>
-                  <p className="text-sm text-gray-500">
-                    {getPercentage(report.conversaciones_clasificadas.venta_cerrada, report.total_conversaciones)}% del total
-                  </p>
-                </div>
-              </div>
-            </div>
+              </CardBody>
+            </Card>
 
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <div className="flex items-center">
-                <div className="flex-shrink-0">
-                  <TrendingUp className="h-8 w-8 text-yellow-500" />
+            <Card>
+              <CardBody>
+                <div className="flex items-center">
+                  <div className="p-2 bg-yellow-100 dark:bg-yellow-900 rounded-lg">
+                    <TrendingUp className="h-6 w-6 text-yellow-600 dark:text-yellow-400" />
+                  </div>
+                  <div className="ml-4">
+                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Avg Response Time</p>
+                    <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{report.average_response_time}m</p>
+                  </div>
                 </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-500">Tiempo Respuesta</p>
-                  <p className="text-2xl font-bold text-gray-900">{report.tiempo_respuesta_promedio} min</p>
-                  <p className="text-sm text-gray-500">Promedio</p>
-                </div>
-              </div>
-            </div>
+              </CardBody>
+            </Card>
 
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <div className="flex items-center">
-                <div className="flex-shrink-0">
-                  <Users className="h-8 w-8 text-purple-500" />
+            <Card>
+              <CardBody>
+                <div className="flex items-center">
+                  <div className="p-2 bg-purple-100 dark:bg-purple-900 rounded-lg">
+                    <Users className="h-6 w-6 text-purple-600 dark:text-purple-400" />
+                  </div>
+                  <div className="ml-4">
+                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Customer Satisfaction</p>
+                    <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{report.customer_satisfaction}/5</p>
+                  </div>
                 </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-500">Satisfacción</p>
-                  <p className="text-2xl font-bold text-gray-900">{report.satisfaccion_cliente}/5</p>
-                  <p className="text-sm text-gray-500">Calificación</p>
-                </div>
-              </div>
-            </div>
+              </CardBody>
+            </Card>
           </div>
 
-          {/* Conversation Classification Chart */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">Clasificación de Conversaciones</h3>
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <div className="w-4 h-4 bg-green-500 rounded"></div>
-                  <span className="text-sm font-medium text-gray-700">Venta Cerrada</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <div className="w-32 bg-gray-200 rounded-full h-2">
-                    <div
-                      className="bg-green-500 h-2 rounded-full"
-                      style={{
-                        width: `${getPercentage(report.conversaciones_clasificadas.venta_cerrada, report.total_conversaciones)}%`
-                      }}
-                    ></div>
+          {/* Conversation Classification */}
+          <Card>
+            <CardHeader>
+              <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">Conversation Classification</h3>
+            </CardHeader>
+            <CardBody>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="text-center p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                  <div className="text-2xl font-bold text-green-600 dark:text-green-400">{report.classified_conversations.closed_sale}</div>
+                  <div className="text-sm text-green-700 dark:text-green-300">Closed Sales</div>
+                  <div className="text-xs text-green-600 dark:text-green-400">
+                    {getPercentage(report.classified_conversations.closed_sale, report.total_conversations)}%
                   </div>
-                  <span className="text-sm text-gray-500 w-12 text-right">
-                    {report.conversaciones_clasificadas.venta_cerrada}
-                  </span>
                 </div>
-              </div>
 
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <div className="w-4 h-4 bg-blue-500 rounded"></div>
-                  <span className="text-sm font-medium text-gray-700">Cliente Interesado</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <div className="w-32 bg-gray-200 rounded-full h-2">
-                    <div
-                      className="bg-blue-500 h-2 rounded-full"
-                      style={{
-                        width: `${getPercentage(report.conversaciones_clasificadas.cliente_interesado, report.total_conversaciones)}%`
-                      }}
-                    ></div>
+                <div className="text-center p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                  <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">{report.classified_conversations.interested_customer}</div>
+                  <div className="text-sm text-blue-700 dark:text-blue-300">Interested Customers</div>
+                  <div className="text-xs text-blue-600 dark:text-blue-400">
+                    {getPercentage(report.classified_conversations.interested_customer, report.total_conversations)}%
                   </div>
-                  <span className="text-sm text-gray-500 w-12 text-right">
-                    {report.conversaciones_clasificadas.cliente_interesado}
-                  </span>
                 </div>
-              </div>
 
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <div className="w-4 h-4 bg-yellow-500 rounded"></div>
-                  <span className="text-sm font-medium text-gray-700">Requiere Seguimiento</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <div className="w-32 bg-gray-200 rounded-full h-2">
-                    <div
-                      className="bg-yellow-500 h-2 rounded-full"
-                      style={{
-                        width: `${getPercentage(report.conversaciones_clasificadas.requiere_seguimiento, report.total_conversaciones)}%`
-                      }}
-                    ></div>
+                <div className="text-center p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
+                  <div className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">{report.classified_conversations.requires_followup}</div>
+                  <div className="text-sm text-yellow-700 dark:text-yellow-300">Requires Follow-up</div>
+                  <div className="text-xs text-yellow-600 dark:text-yellow-400">
+                    {getPercentage(report.classified_conversations.requires_followup, report.total_conversations)}%
                   </div>
-                  <span className="text-sm text-gray-500 w-12 text-right">
-                    {report.conversaciones_clasificadas.requiere_seguimiento}
-                  </span>
                 </div>
-              </div>
 
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <div className="w-4 h-4 bg-gray-500 rounded"></div>
-                  <span className="text-sm font-medium text-gray-700">Información Solicitada</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <div className="w-32 bg-gray-200 rounded-full h-2">
-                    <div
-                      className="bg-gray-500 h-2 rounded-full"
-                      style={{
-                        width: `${getPercentage(report.conversaciones_clasificadas.informacion_solicitada, report.total_conversaciones)}%`
-                      }}
-                    ></div>
+                <div className="text-center p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                  <div className="text-2xl font-bold text-gray-600 dark:text-gray-400">{report.classified_conversations.information_requested}</div>
+                  <div className="text-sm text-gray-700 dark:text-gray-300">Information Requested</div>
+                  <div className="text-xs text-gray-600 dark:text-gray-400">
+                    {getPercentage(report.classified_conversations.information_requested, report.total_conversations)}%
                   </div>
-                  <span className="text-sm text-gray-500 w-12 text-right">
-                    {report.conversaciones_clasificadas.informacion_solicitada}
-                  </span>
                 </div>
               </div>
-            </div>
-          </div>
+            </CardBody>
+          </Card>
 
-          {/* Performance Insights */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">Rendimiento del Bot</h3>
-              <div className="space-y-3">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-600">Tasa de Conversión</span>
-                  <span className="text-sm font-medium text-gray-900">
-                    {getPercentage(report.conversaciones_clasificadas.venta_cerrada, report.total_conversaciones)}%
+          {/* Performance Chart */}
+          <Card>
+            <CardHeader>
+              <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">Performance Overview</h3>
+            </CardHeader>
+            <CardBody>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Sales Conversion Rate</span>
+                  <span className="text-sm font-bold text-gray-900 dark:text-gray-100">
+                    {getPercentage(report.classified_conversations.closed_sale, report.total_conversations)}%
                   </span>
                 </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-600">Tiempo Respuesta Promedio</span>
-                  <span className="text-sm font-medium text-gray-900">{report.tiempo_respuesta_promedio} min</span>
+                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                  <div
+                    className="bg-green-600 dark:bg-green-500 h-2 rounded-full"
+                    style={{ width: `${getPercentage(report.classified_conversations.closed_sale, report.total_conversations)}%` }}
+                  ></div>
                 </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-600">Satisfacción Cliente</span>
-                  <span className="text-sm font-medium text-gray-900">{report.satisfaccion_cliente}/5</span>
-                </div>
-              </div>
-            </div>
 
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">Resumen del Período</h3>
-              <div className="space-y-3">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-600">Período</span>
-                  <span className="text-sm font-medium text-gray-900">
-                    {format(new Date(dateRange.startDate), 'dd/MM/yyyy', { locale: es })} - {format(new Date(dateRange.endDate), 'dd/MM/yyyy', { locale: es })}
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Customer Interest Rate</span>
+                  <span className="text-sm font-bold text-gray-900 dark:text-gray-100">
+                    {getPercentage(report.classified_conversations.interested_customer, report.total_conversations)}%
                   </span>
                 </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-600">Conversaciones por día</span>
-                  <span className="text-sm font-medium text-gray-900">
-                    {Math.round(report.total_conversaciones / 30)}
+                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                  <div
+                    className="bg-blue-600 dark:bg-blue-500 h-2 rounded-full"
+                    style={{ width: `${getPercentage(report.classified_conversations.interested_customer, report.total_conversations)}%` }}
+                  ></div>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Follow-up Required</span>
+                  <span className="text-sm font-bold text-gray-900 dark:text-gray-100">
+                    {getPercentage(report.classified_conversations.requires_followup, report.total_conversations)}%
                   </span>
                 </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-600">Ventas por día</span>
-                  <span className="text-sm font-medium text-gray-900">
-                    {Math.round(report.conversaciones_clasificadas.venta_cerrada / 30)}
-                  </span>
+                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                  <div
+                    className="bg-yellow-600 dark:bg-yellow-500 h-2 rounded-full"
+                    style={{ width: `${getPercentage(report.classified_conversations.requires_followup, report.total_conversations)}%` }}
+                  ></div>
                 </div>
               </div>
-            </div>
-          </div>
+            </CardBody>
+          </Card>
         </>
       )}
     </div>

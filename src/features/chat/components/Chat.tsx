@@ -1,6 +1,6 @@
 import React, { useRef, useEffect } from 'react';
 import { FileText, MessageSquare } from 'lucide-react';
-import type { Conversacion } from '../../../types';
+import type { Conversation } from '../../../types';
 import { useMessages } from '../../../hooks/useMessages';
 import { useConversations } from '../../../hooks/useConversations';
 import LoadingSpinner from '../../../components/ui/LoadingSpinner';
@@ -9,13 +9,13 @@ import MessageBubble from './MessageBubble';
 import MessageInput from './MessageInput';
 
 interface ChatProps {
-  conversation: Conversacion | null;
+  conversation: Conversation | null;
 }
 
 const Chat: React.FC<ChatProps> = ({ conversation }) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const { messages, loading, sendMessage } = useMessages(conversation?.id || null);
-  const { toggleIA } = useConversations();
+  const { messages, loading, sendMessage } = useMessages(conversation?.id);
+  const { toggleAI } = useConversations();
 
   useEffect(() => {
     scrollToBottom();
@@ -39,7 +39,7 @@ const Chat: React.FC<ChatProps> = ({ conversation }) => {
     if (!conversation) return;
 
     try {
-      await toggleIA(conversation.id, !conversation.ia_activa);
+      await toggleAI(conversation.id, !conversation.ai_active);
     } catch (error) {
       console.error('Error toggling IA:', error);
     }
@@ -82,8 +82,8 @@ const Chat: React.FC<ChatProps> = ({ conversation }) => {
 
       <MessageInput
         onSendMessage={handleSendMessage}
-        disabled={conversation.ia_activa}
-        placeholder={conversation.ia_activa ? "El bot está respondiendo automáticamente..." : "Escribe un mensaje..."}
+        disabled={conversation.ai_active}
+        placeholder={conversation.ai_active ? "El bot está respondiendo automáticamente..." : "Escribe un mensaje..."}
       />
     </div>
   );

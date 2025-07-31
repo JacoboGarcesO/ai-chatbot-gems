@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { MessageSquare } from 'lucide-react';
-import type { Conversacion } from '../../../types';
+import type { Conversation } from '../../../types';
 import { useConversations } from '../../../hooks/useConversations';
 import { Card, CardHeader, CardBody } from '../../../components/ui/Card';
 import LoadingSpinner from '../../../components/ui/LoadingSpinner';
@@ -8,7 +8,7 @@ import ConversationItem from './ConversationItem';
 import ConversationFilters from './ConversationFilters';
 
 interface ConversationsListProps {
-  onSelectConversation: (conversation: Conversacion) => void;
+  onSelectConversation: (conversation: Conversation) => void;
   selectedConversationId?: string;
 }
 
@@ -20,14 +20,14 @@ const ConversationsList: React.FC<ConversationsListProps> = ({
   const [statusFilter, setStatusFilter] = useState<string>('all');
 
   const { conversations, loading, error } = useConversations({
-    filters: statusFilter !== 'all' ? { estado: statusFilter } : undefined,
+    filters: statusFilter !== 'all' ? { status: statusFilter } : undefined,
   });
 
   const filteredConversations = conversations.filter((conversation) => {
-    const matchesSearch = conversation.cliente?.nombre
+    const matchesSearch = conversation.customer?.name
       .toLowerCase()
       .includes(searchTerm.toLowerCase()) ||
-      conversation.ultimo_mensaje?.toLowerCase().includes(searchTerm.toLowerCase());
+      conversation.last_message?.toLowerCase().includes(searchTerm.toLowerCase());
 
     return matchesSearch;
   });

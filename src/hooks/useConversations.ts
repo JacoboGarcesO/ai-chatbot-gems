@@ -1,16 +1,16 @@
 import { useState, useEffect, useCallback } from 'react';
-import type { Conversacion } from '../types';
-import { conversacionesAPI } from '../services/api';
+import type { Conversation } from '../types';
+import { conversationsAPI } from '../services/api';
 
 interface UseConversationsOptions {
   filters?: {
-    estado?: string;
-    cliente?: string;
+    status?: string;
+    customer?: string;
   };
 }
 
 export const useConversations = (options: UseConversationsOptions = {}) => {
-  const [conversations, setConversations] = useState<Conversacion[]>([]);
+  const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -18,7 +18,7 @@ export const useConversations = (options: UseConversationsOptions = {}) => {
     try {
       setLoading(true);
       setError(null);
-      const data = await conversacionesAPI.listarConversaciones(options.filters);
+      const data = await conversationsAPI.listConversations(options.filters);
       setConversations(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error loading conversations');
@@ -27,36 +27,36 @@ export const useConversations = (options: UseConversationsOptions = {}) => {
     }
   }, [options.filters]);
 
-  const toggleIA = useCallback(async (conversationId: string, iaActiva: boolean) => {
+  const toggleAI = useCallback(async (conversationId: string, aiActive: boolean) => {
     try {
-      const success = await conversacionesAPI.toggleIA(conversationId, iaActiva);
+      const success = await conversationsAPI.toggleAI(conversationId, aiActive);
       if (success) {
         setConversations(prev =>
           prev.map(conv =>
             conv.id === conversationId
-              ? { ...conv, ia_activa: iaActiva }
+              ? { ...conv, ai_active: aiActive }
               : conv
           )
         );
       }
       return success;
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error toggling IA');
+      setError(err instanceof Error ? err.message : 'Error toggling AI');
       return false;
     }
   }, []);
 
   const sendMessage = useCallback(async (conversationId: string, content: string) => {
     try {
-      const message = await conversacionesAPI.enviarMensajeHumano(conversationId, content);
+      const message = await conversationsAPI.sendHumanMessage(conversationId, content);
       // Update the conversation's last message
       setConversations(prev =>
         prev.map(conv =>
           conv.id === conversationId
             ? {
               ...conv,
-              ultimo_mensaje: content,
-              ultimo_timestamp: message.timestamp
+              last_message: content,
+              last_timestamp: message.timestamp
             }
             : conv
         )
@@ -77,7 +77,7 @@ export const useConversations = (options: UseConversationsOptions = {}) => {
     loading,
     error,
     loadConversations,
-    toggleIA,
+    toggleAI,
     sendMessage,
   };
 }; 

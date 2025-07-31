@@ -1,16 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Send, Bot, User, ToggleLeft, ToggleRight, FileText, Tag, MessageSquare } from 'lucide-react';
+import { Send, Bot, User, ToggleLeft, ToggleRight, MessageSquare } from 'lucide-react';
 import { format } from 'date-fns';
-import { es } from 'date-fns/locale';
-import { Conversacion, Mensaje } from '../types';
-import { conversacionesAPI } from '../services/api';
+import { enUS } from 'date-fns/locale';
+import type { Conversation, Message } from '../types';
+import { conversationsAPI } from '../services/api';
 
 interface ChatProps {
-  conversation: Conversacion | null;
+  conversation: Conversation | null;
 }
 
 const Chat: React.FC<ChatProps> = ({ conversation }) => {
-  const [messages, setMessages] = useState<Mensaje[]>([]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
@@ -31,7 +31,7 @@ const Chat: React.FC<ChatProps> = ({ conversation }) => {
 
     try {
       setLoading(true);
-      const data = await conversacionesAPI.obtenerHistorialMensajes(conversation.id);
+      const data = await conversationsAPI.getMessageHistory(conversation.id);
       setMessages(data);
     } catch (error) {
       console.error('Error loading messages:', error);
@@ -49,7 +49,7 @@ const Chat: React.FC<ChatProps> = ({ conversation }) => {
 
     try {
       setSending(true);
-      const sentMessage = await conversacionesAPI.enviarMensajeHumano(conversation.id, newMessage.trim());
+      const sentMessage = await conversationsAPI.sendHumanMessage(conversation.id, newMessage.trim());
       setMessages(prev => [...prev, sentMessage]);
       setNewMessage('');
     } catch (error) {
@@ -59,156 +59,149 @@ const Chat: React.FC<ChatProps> = ({ conversation }) => {
     }
   };
 
-  const handleToggleIA = async () => {
+  const handleToggleAI = async () => {
     if (!conversation) return;
 
     try {
-      const success = await conversacionesAPI.toggleIA(conversation.id, !conversation.ia_activa);
+      const success = await conversationsAPI.toggleAI(conversation.id, !conversation.ai_active);
       if (success) {
         // Update the conversation object
-        conversation.ia_activa = !conversation.ia_activa;
+        conversation.ai_active = !conversation.ai_active;
         // Force re-render
         setMessages([...messages]);
       }
     } catch (error) {
-      console.error('Error toggling IA:', error);
+      console.error('Error toggling AI:', error);
     }
   };
 
-  const getMessageIcon = (tipoRemitente: string) => {
-    switch (tipoRemitente) {
+  const getMessageIcon = (senderType: string) => {
+    switch (senderType) {
       case 'bot':
         return <Bot className="h-5 w-5 text-blue-500" />;
-      case 'agente_humano':
+      case 'human_agent':
         return <User className="h-5 w-5 text-green-500" />;
-      case 'cliente_final':
+      case 'customer':
         return <User className="h-5 w-5 text-gray-500" />;
       default:
         return <User className="h-5 w-5 text-gray-400" />;
     }
   };
 
-  const getMessageAlignment = (tipoRemitente: string) => {
-    return tipoRemitente === 'cliente_final' ? 'justify-start' : 'justify-end';
+  const getMessageAlignment = (senderType: string) => {
+    return senderType === 'customer' ? 'justify-start' : 'justify-end';
   };
 
-  const getMessageBubbleStyle = (tipoRemitente: string) => {
-    switch (tipoRemitente) {
+  const getMessageBubbleStyle = (senderType: string) => {
+    switch (senderType) {
       case 'bot':
-        return 'bg-blue-100 text-blue-900';
-      case 'agente_humano':
-        return 'bg-green-100 text-green-900';
-      case 'cliente_final':
-        return 'bg-gray-100 text-gray-900';
+        return 'bg-blue-100 dark:bg-blue-900 text-blue-900 dark:text-blue-100';
+      case 'human_agent':
+        return 'bg-green-100 dark:bg-green-900 text-green-900 dark:text-green-100';
+      case 'customer':
+        return 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100';
       default:
-        return 'bg-gray-100 text-gray-900';
+        return 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100';
+    }
+  };
+
+  const getSenderName = (senderType: string) => {
+    switch (senderType) {
+      case 'bot':
+        return 'AI Assistant';
+      case 'human_agent':
+        return 'Agent';
+      case 'customer':
+        return conversation?.customer?.name || 'Customer';
+      default:
+        return 'Unknown';
     }
   };
 
   if (!conversation) {
     return (
-      <div className="flex items-center justify-center h-full bg-gray-50">
+      <div className="flex items-center justify-center h-full bg-gray-50 dark:bg-gray-900">
         <div className="text-center">
-          <FileText className="mx-auto h-12 w-12 text-gray-300 mb-4" />
-          <p className="text-gray-500">Selecciona una conversación para comenzar</p>
+          <MessageSquare className="mx-auto h-12 w-12 text-gray-300 dark:text-gray-600 mb-4" />
+          <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">Select a conversation</h3>
+          <p className="text-gray-500 dark:text-gray-400">Choose a conversation from the list to start chatting</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col h-full bg-white rounded-lg shadow-sm border border-gray-200">
-      {/* Chat Header */}
-      <div className="p-4 border-b border-gray-200 bg-gray-50">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center">
-              <span className="text-white font-medium">
-                {conversation.cliente?.nombre.charAt(0)}
-              </span>
-            </div>
-            <div>
-              <h3 className="font-medium text-gray-900">{conversation.cliente?.nombre}</h3>
-              <p className="text-sm text-gray-500">{conversation.cliente?.telefono}</p>
-            </div>
-          </div>
-
-          <div className="flex items-center space-x-3">
-            {/* IA Toggle */}
-            <div className="flex items-center space-x-2">
-              <span className="text-sm text-gray-600">IA</span>
-              <button
-                onClick={handleToggleIA}
-                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${conversation.ia_activa ? 'bg-blue-600' : 'bg-gray-200'
-                  }`}
-              >
-                <span
-                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${conversation.ia_activa ? 'translate-x-6' : 'translate-x-1'
-                    }`}
-                />
-              </button>
-              <span className="text-sm text-gray-600">
-                {conversation.ia_activa ? 'ON' : 'OFF'}
-              </span>
-            </div>
-
-            {/* Status Badge */}
-            <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${conversation.estado === 'abierta' ? 'bg-green-100 text-green-800' :
-                conversation.estado === 'cerrada' ? 'bg-gray-100 text-gray-800' :
-                  'bg-yellow-100 text-yellow-800'
-              }`}>
-              {conversation.estado === 'abierta' ? 'Abierta' :
-                conversation.estado === 'cerrada' ? 'Cerrada' : 'Pendiente'}
+    <div className="flex flex-col h-full bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+      {/* Header */}
+      <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
+        <div className="flex items-center space-x-3">
+          <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center">
+            <span className="text-white font-medium">
+              {conversation.customer?.name?.charAt(0) || 'C'}
             </span>
+          </div>
+          <div>
+            <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">
+              {conversation.customer?.name || 'Unknown Customer'}
+            </h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              {conversation.status === 'open' ? 'Active conversation' :
+                conversation.status === 'closed' ? 'Closed conversation' : 'Pending conversation'}
+            </p>
           </div>
         </div>
 
-        {/* AI Classification and Summary */}
-        {(conversation.clasificacion_ia || conversation.resumen_ia) && (
-          <div className="mt-3 p-3 bg-blue-50 rounded-lg">
-            {conversation.clasificacion_ia && (
-              <div className="flex items-center space-x-2 mb-2">
-                <Tag className="h-4 w-4 text-blue-500" />
-                <span className="text-sm font-medium text-blue-900">
-                  Clasificación: {conversation.clasificacion_ia}
-                </span>
-              </div>
+        <div className="flex items-center space-x-2">
+          <button
+            onClick={handleToggleAI}
+            className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${conversation.ai_active
+                ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 hover:bg-green-200 dark:hover:bg-green-800'
+                : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'
+              }`}
+          >
+            {conversation.ai_active ? (
+              <>
+                <ToggleRight className="h-4 w-4" />
+                <span>AI ON</span>
+              </>
+            ) : (
+              <>
+                <ToggleLeft className="h-4 w-4" />
+                <span>AI OFF</span>
+              </>
             )}
-            {conversation.resumen_ia && (
-              <div className="flex items-start space-x-2">
-                <FileText className="h-4 w-4 text-blue-500 mt-0.5" />
-                <p className="text-sm text-blue-800">{conversation.resumen_ia}</p>
-              </div>
-            )}
-          </div>
-        )}
+          </button>
+        </div>
       </div>
 
-      {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      {/* Messages */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-white dark:bg-gray-800">
         {loading ? (
           <div className="flex items-center justify-center h-32">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 dark:border-blue-400"></div>
           </div>
         ) : messages.length === 0 ? (
-          <div className="text-center text-gray-500 py-8">
-            <MessageSquare className="mx-auto h-12 w-12 text-gray-300 mb-4" />
-            <p>No hay mensajes en esta conversación</p>
+          <div className="text-center text-gray-500 dark:text-gray-400 py-8">
+            <MessageSquare className="mx-auto h-12 w-12 text-gray-300 dark:text-gray-600 mb-4" />
+            <p>No messages yet. Start the conversation!</p>
           </div>
         ) : (
           messages.map((message) => (
-            <div key={message.id} className={`flex ${getMessageAlignment(message.tipo_remitente)}`}>
-              <div className={`flex items-start space-x-2 max-w-xs lg:max-w-md ${message.tipo_remitente === 'cliente_final' ? 'flex-row' : 'flex-row-reverse space-x-reverse'
-                }`}>
-                <div className="flex-shrink-0">
-                  {getMessageIcon(message.tipo_remitente)}
+            <div
+              key={message.id}
+              className={`flex ${getMessageAlignment(message.sender_type)}`}
+            >
+              <div className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${getMessageBubbleStyle(message.sender_type)}`}>
+                <div className="flex items-center space-x-2 mb-1">
+                  {getMessageIcon(message.sender_type)}
+                  <span className="text-xs font-medium opacity-75">
+                    {getSenderName(message.sender_type)}
+                  </span>
                 </div>
-                <div className={`px-3 py-2 rounded-lg ${getMessageBubbleStyle(message.tipo_remitente)}`}>
-                  <p className="text-sm">{message.contenido}</p>
-                  <p className="text-xs opacity-70 mt-1">
-                    {format(new Date(message.timestamp), 'HH:mm', { locale: es })}
-                  </p>
-                </div>
+                <p className="text-sm">{message.content}</p>
+                <p className="text-xs opacity-75 mt-1">
+                  {format(new Date(message.timestamp), 'HH:mm', { locale: enUS })}
+                </p>
               </div>
             </div>
           ))
@@ -216,31 +209,30 @@ const Chat: React.FC<ChatProps> = ({ conversation }) => {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Message Input */}
-      <div className="p-4 border-t border-gray-200">
+      {/* Input */}
+      <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
         <div className="flex space-x-2">
           <input
             type="text"
             value={newMessage}
             onChange={(e) => setNewMessage(e.target.value)}
             onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-            placeholder={conversation.ia_activa ? "El bot está respondiendo automáticamente..." : "Escribe un mensaje..."}
-            disabled={conversation.ia_activa || sending}
-            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:text-gray-500"
+            placeholder="Type your message..."
+            disabled={sending}
+            className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400"
           />
           <button
             onClick={handleSendMessage}
-            disabled={!newMessage.trim() || conversation.ia_activa || sending}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+            disabled={!newMessage.trim() || sending}
+            className="px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-md hover:bg-blue-700 dark:hover:bg-blue-600 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
-            <Send className="h-4 w-4" />
+            {sending ? (
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+            ) : (
+              <Send className="h-4 w-4" />
+            )}
           </button>
         </div>
-        {conversation.ia_activa && (
-          <p className="text-xs text-gray-500 mt-2">
-            💡 La IA está activa. Cambia a modo manual para enviar mensajes.
-          </p>
-        )}
       </div>
     </div>
   );

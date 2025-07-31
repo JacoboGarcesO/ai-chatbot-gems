@@ -1,4 +1,3 @@
-import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Layout from './components/Layout';
 import ConversationsPage from './pages/ConversationsPage';
@@ -12,9 +11,9 @@ function App() {
       <Layout>
         <Routes>
           <Route path="/" element={<ConversationsPage />} />
-          <Route path="/base-conocimiento" element={<KnowledgeBasePage />} />
-          <Route path="/reportes" element={<ReportsPage />} />
-          <Route path="/configuracion" element={<SettingsPage />} />
+          <Route path="/knowledge-base" element={<KnowledgeBasePage />} />
+          <Route path="/reports" element={<ReportsPage />} />
+          <Route path="/settings" element={<SettingsPage />} />
         </Routes>
       </Layout>
     </Router>

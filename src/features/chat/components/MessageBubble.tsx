@@ -2,11 +2,10 @@ import React from 'react';
 import { Bot, User } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import type { Mensaje } from '../../../types';
-import { cn } from '../../../utils/cn';
+import type { Message } from '../../../types';
 
 interface MessageBubbleProps {
-  message: Mensaje;
+  message: Message;
 }
 
 const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
@@ -41,14 +40,14 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
   };
 
   return (
-    <div className={`flex ${getMessageAlignment(message.tipo_remitente)}`}>
-      <div className={`flex items-start space-x-2 max-w-xs lg:max-w-md ${message.tipo_remitente === 'cliente_final' ? 'flex-row' : 'flex-row-reverse space-x-reverse'
+    <div className={`flex ${getMessageAlignment(message.sender_type)}`}>
+      <div className={`flex items-start space-x-2 max-w-xs lg:max-w-md ${message.sender_type === 'customer' ? 'flex-row' : 'flex-row-reverse space-x-reverse'
         }`}>
         <div className="flex-shrink-0">
-          {getMessageIcon(message.tipo_remitente)}
+          {getMessageIcon(message.sender_type)}
         </div>
-        <div className={`px-3 py-2 rounded-lg ${getMessageBubbleStyle(message.tipo_remitente)}`}>
-          <p className="text-sm">{message.contenido}</p>
+        <div className={`px-3 py-2 rounded-lg ${getMessageBubbleStyle(message.sender_type)}`}>
+          <p className="text-sm">{message.content}</p>
           <p className="text-xs opacity-70 mt-1">
             {format(new Date(message.timestamp), 'HH:mm', { locale: es })}
           </p>

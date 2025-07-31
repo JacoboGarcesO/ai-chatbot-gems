@@ -1,18 +1,18 @@
 import { useState, useEffect, useCallback } from 'react';
-import type { BaseConocimiento } from '../types';
-import { baseConocimientoAPI } from '../services/api';
+import type { KnowledgeBase } from '../types';
+import { knowledgeBaseAPI } from '../services/api';
 
 export const useKnowledgeBase = () => {
-  const [entries, setEntries] = useState<BaseConocimiento[]>([]);
+  const [knowledgeBase, setKnowledgeBase] = useState<KnowledgeBase[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const loadEntries = useCallback(async () => {
+  const loadKnowledgeBase = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
-      const data = await baseConocimientoAPI.listarBaseConocimiento();
-      setEntries(data);
+      const data = await knowledgeBaseAPI.listKnowledgeBase();
+      setKnowledgeBase(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error loading knowledge base');
     } finally {
@@ -20,10 +20,10 @@ export const useKnowledgeBase = () => {
     }
   }, []);
 
-  const createEntry = useCallback(async (entry: Omit<BaseConocimiento, 'id'>) => {
+  const createEntry = useCallback(async (entry: Omit<KnowledgeBase, 'id'>) => {
     try {
-      const newEntry = await baseConocimientoAPI.crearEntrada(entry);
-      setEntries(prev => [...prev, newEntry]);
+      const newEntry = await knowledgeBaseAPI.createEntry(entry);
+      setKnowledgeBase(prev => [...prev, newEntry]);
       return newEntry;
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error creating entry');
@@ -31,14 +31,12 @@ export const useKnowledgeBase = () => {
     }
   }, []);
 
-  const updateEntry = useCallback(async (id: string, updates: Partial<BaseConocimiento>) => {
+  const updateEntry = useCallback(async (id: string, entry: Partial<KnowledgeBase>) => {
     try {
-      const updatedEntry = await baseConocimientoAPI.actualizarEntrada(id, updates);
+      const updatedEntry = await knowledgeBaseAPI.updateEntry(id, entry);
       if (updatedEntry) {
-        setEntries(prev =>
-          prev.map(entry =>
-            entry.id === id ? updatedEntry : entry
-          )
+        setKnowledgeBase(prev =>
+          prev.map(item => item.id === id ? updatedEntry : item)
         );
       }
       return updatedEntry;
@@ -50,9 +48,9 @@ export const useKnowledgeBase = () => {
 
   const deleteEntry = useCallback(async (id: string) => {
     try {
-      const success = await baseConocimientoAPI.eliminarEntrada(id);
+      const success = await knowledgeBaseAPI.deleteEntry(id);
       if (success) {
-        setEntries(prev => prev.filter(entry => entry.id !== id));
+        setKnowledgeBase(prev => prev.filter(item => item.id !== id));
       }
       return success;
     } catch (err) {
@@ -61,26 +59,17 @@ export const useKnowledgeBase = () => {
     }
   }, []);
 
-  const searchEntries = useCallback((searchTerm: string) => {
-    return entries.filter((entry) =>
-      entry.pregunta_clave.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      entry.respuesta.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      entry.tags?.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()))
-    );
-  }, [entries]);
-
   useEffect(() => {
-    loadEntries();
-  }, [loadEntries]);
+    loadKnowledgeBase();
+  }, [loadKnowledgeBase]);
 
   return {
-    entries,
+    knowledgeBase,
     loading,
     error,
-    loadEntries,
+    loadKnowledgeBase,
     createEntry,
     updateEntry,
     deleteEntry,
-    searchEntries,
   };
 }; 
