@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { Conversacion } from '../types';
-import ConversationsList from '../components/ConversationsList';
-import Chat from '../components/Chat';
+import type { Conversacion } from '../types';
+import ConversationsList from '../features/conversations/components/ConversationsList';
+import Chat from '../features/chat/components/Chat';
 
 const ConversationsPage: React.FC = () => {
   const [selectedConversation, setSelectedConversation] = useState<Conversacion | null>(null);

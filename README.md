@@ -1,65 +1,81 @@
-# Plataforma de Chatbot con IA
+# Plataforma de Chatbot con IA - GEMS Innovations
 
-Una plataforma web moderna para gestionar conversaciones de WhatsApp con asistencia de IA, construida con React, TypeScript, Vite y Tailwind CSS.
+Una plataforma moderna para gestionar conversaciones de WhatsApp con asistencia de IA, desarrollada con React, TypeScript y Tailwind CSS.
 
-## 🚀 Características
+## 🎨 Brand Colors & Dark Mode
 
-### Gestión de Conversaciones
-- **Lista de Conversaciones**: Vista completa de todas las conversaciones de WhatsApp activas y pasadas
-- **Filtros y Búsqueda**: Filtrado por estado y búsqueda por cliente o mensaje
-- **Chat en Tiempo Real**: Interfaz de chat completa con historial de mensajes
-- **Toggle IA ON/OFF**: Control manual para activar/desactivar respuestas automáticas del bot
+La aplicación utiliza los colores oficiales de **GEMS Innovations**:
 
-### Base de Conocimiento
-- **CRUD Completo**: Crear, leer, actualizar y eliminar entradas de conocimiento
-- **Etiquetas**: Sistema de etiquetas para organizar respuestas
-- **Búsqueda Avanzada**: Búsqueda por pregunta, respuesta o etiquetas
-- **Estado Activo/Inactivo**: Control de qué respuestas están disponibles para el bot
+- **Primary**: `#0C7F9D` - Azul principal
+- **Secondary**: `#2089A2` - Azul secundario  
+- **Accent**: `#E22977` - Rosa/Magenta de acento
 
-### Reportes y Analytics
-- **Métricas Clave**: Total de conversaciones, ventas cerradas, tiempo de respuesta
-- **Clasificación IA**: Análisis automático de conversaciones (Venta Cerrada, Cliente Interesado, etc.)
-- **Gráficos Visuales**: Visualización de datos con barras de progreso
-- **Exportación**: Descarga de reportes en formato CSV
-- **Filtros por Fecha**: Análisis de períodos específicos
+### 🌙 Modo Oscuro
+- Implementado con `darkMode: 'class'` en Tailwind
+- Toggle automático con persistencia en localStorage
+- Todos los componentes adaptados para modo claro y oscuro
 
-### Interfaz Moderna
-- **Diseño Responsivo**: Funciona en desktop, tablet y móvil
-- **Navegación Intuitiva**: Sidebar con navegación clara
-- **Componentes Reutilizables**: Arquitectura modular y escalable
-- **Iconografía**: Iconos de Lucide React para mejor UX
+## 🚀 Características Principales
+
+### ✅ Funcionalidades Implementadas
+
+#### 🔄 Gestión de Conversaciones
+- **Lista de conversaciones** con filtros por estado
+- **Búsqueda** por cliente o contenido de mensaje
+- **Estados visuales** (Abierta, Cerrada, Pendiente)
+- **Indicadores de IA** (ON/OFF)
+
+#### 💬 Chat Inteligente
+- **Historial completo** de mensajes
+- **Toggle IA ON/OFF** por conversación
+- **Mensajes diferenciados** (Bot, Agente, Cliente)
+- **Scroll automático** a nuevos mensajes
+- **Clasificación y resumen** automático de conversaciones
+
+#### 🧠 Base de Conocimiento
+- **CRUD completo** de entradas
+- **Búsqueda y filtrado**
+- **Tags y categorización**
+- **Estado activo/inactivo**
+
+#### 📊 Reportes y Analytics
+- **Métricas clave** (conversaciones, ventas, tiempo respuesta)
+- **Filtros por fecha**
+- **Exportación CSV**
+- **Gráficos de clasificación**
 
 ## 🛠️ Tecnologías Utilizadas
 
-- **Frontend**: React 19 + TypeScript
-- **Build Tool**: Vite
-- **Styling**: Tailwind CSS
-- **Routing**: React Router DOM
-- **Icons**: Lucide React
-- **Date Handling**: date-fns
-- **State Management**: React Hooks
+### Frontend
+- **React 19** - Biblioteca de UI
+- **TypeScript** - Tipado estático
+- **Vite** - Build tool y dev server
+- **Tailwind CSS** - Framework de estilos
+- **React Router DOM** - Navegación
+- **Lucide React** - Iconos
+- **date-fns** - Manejo de fechas
+
+### Arquitectura
+- **Slicing Architecture** - Organización por features
+- **Custom Hooks** - Lógica reutilizable
+- **Componentes UI** - Sistema de diseño unificado
+- **Mock API** - Servicios simulados
 
 ## 📁 Estructura del Proyecto
 
 ```
 src/
-├── components/          # Componentes reutilizables
-│   ├── Layout.tsx      # Layout principal con navegación
-│   ├── ConversationsList.tsx  # Lista de conversaciones
-│   ├── Chat.tsx        # Componente de chat individual
-│   ├── KnowledgeBase.tsx      # Gestión de base de conocimiento
-│   └── Reports.tsx     # Reportes y analytics
-├── pages/              # Páginas principales
-│   ├── ConversationsPage.tsx
-│   ├── KnowledgeBasePage.tsx
-│   ├── ReportsPage.tsx
-│   └── SettingsPage.tsx
-├── services/           # Servicios de API
-│   └── api.ts         # Mock API services
-├── types/              # Definiciones de TypeScript
-│   └── index.ts       # Interfaces y tipos
-├── App.tsx            # Componente principal
-└── main.tsx           # Punto de entrada
+├── components/           # Componentes UI reutilizables
+│   ├── ui/              # Componentes base (Button, Input, Card, etc.)
+│   └── Layout.tsx       # Layout principal con sidebar
+├── features/            # Slices de funcionalidad
+│   ├── conversations/   # Gestión de conversaciones
+│   └── chat/           # Interfaz de chat
+├── hooks/              # Custom hooks
+├── services/           # Servicios de API (mock)
+├── types/              # Definiciones TypeScript
+├── utils/              # Utilidades
+└── pages/              # Páginas principales
 ```
 
 ## 🚀 Instalación y Uso
@@ -69,124 +85,132 @@ src/
 - npm o yarn
 
 ### Instalación
-
-1. Clona el repositorio:
 ```bash
+# Clonar el repositorio
 git clone <repository-url>
 cd sales-assistant
-```
 
-2. Instala las dependencias:
-```bash
+# Instalar dependencias
 npm install
-```
 
-3. Ejecuta el servidor de desarrollo:
-```bash
+# Iniciar servidor de desarrollo
 npm run dev
 ```
 
-4. Abre tu navegador en `http://localhost:5173`
-
 ### Scripts Disponibles
+```bash
+npm run dev          # Servidor de desarrollo
+npm run build        # Build de producción
+npm run preview      # Preview del build
+npm run lint         # Linting con ESLint
+```
 
-- `npm run dev` - Servidor de desarrollo
-- `npm run build` - Construir para producción
-- `npm run preview` - Vista previa de la build
-- `npm run lint` - Ejecutar ESLint
+## 🎯 Funcionalidades del Chatbot
 
-## 📊 Funcionalidades Implementadas
+### 1. **Gestión de Conversaciones**
+- Visualización de todas las conversaciones activas/pasadas
+- Filtrado por estado (abierta, cerrada, pendiente)
+- Búsqueda por nombre de cliente o contenido
+- Indicadores visuales de estado y actividad de IA
 
-### 1. Gestión de Conversaciones
-- ✅ Lista de conversaciones con filtros
-- ✅ Vista de chat individual
-- ✅ Toggle IA ON/OFF
-- ✅ Envío de mensajes manuales
-- ✅ Historial completo de mensajes
-- ✅ Clasificación y resumen de IA
+### 2. **Interacción Inteligente**
+- **IA Automática**: El bot responde automáticamente usando la base de conocimiento
+- **Control Manual**: Toggle IA ON/OFF para intervención humana
+- **Historial Completo**: Todos los mensajes quedan registrados
+- **Clasificación Automática**: Al finalizar, la IA clasifica y resume la conversación
 
-### 2. Base de Conocimiento
-- ✅ CRUD completo de entradas
-- ✅ Sistema de etiquetas
-- ✅ Búsqueda y filtrado
-- ✅ Estados activo/inactivo
-- ✅ Modal de edición
+### 3. **Base de Conocimiento**
+- Gestión completa de preguntas y respuestas
+- Tags para categorización
+- Estado activo/inactivo por entrada
+- Búsqueda y filtrado avanzado
 
-### 3. Reportes y Analytics
-- ✅ Métricas clave
-- ✅ Gráficos de clasificación
-- ✅ Filtros por fecha
-- ✅ Exportación CSV
-- ✅ Análisis de rendimiento
-
-### 4. Interfaz de Usuario
-- ✅ Diseño responsivo
-- ✅ Navegación lateral
-- ✅ Componentes modernos
-- ✅ Estados de carga
-- ✅ Mensajes de error
+### 4. **Analytics y Reportes**
+- Métricas de rendimiento del bot
+- Clasificación de conversaciones
+- Tiempos de respuesta
+- Exportación de datos
 
 ## 🔧 Configuración de API
 
-Actualmente el proyecto utiliza servicios mock para simular la API. Para integrar con un backend real:
+### Servicios Mock Implementados
 
-1. Modifica los servicios en `src/services/api.ts`
-2. Reemplaza las funciones mock con llamadas HTTP reales
-3. Configura las variables de entorno para las URLs de la API
-
-### Estructura de API Esperada
-
+#### Conversaciones
 ```typescript
-// Conversaciones
-GET /api/conversaciones
-GET /api/conversaciones/:id
-GET /api/conversaciones/:id/mensajes
-POST /api/conversaciones/:id/mensajes
-PUT /api/conversaciones/:id/ia-toggle
+// Listar conversaciones
+conversacionesAPI.listarConversaciones(filtros?)
 
-// Base de Conocimiento
-GET /api/base-conocimiento
-POST /api/base-conocimiento
-PUT /api/base-conocimiento/:id
-DELETE /api/base-conocimiento/:id
+// Obtener historial de mensajes
+conversacionesAPI.obtenerHistorialMensajes(conversacionId)
 
-// Reportes
-GET /api/reportes?fechaInicio=&fechaFin=
+// Toggle IA ON/OFF
+conversacionesAPI.toggleIA(conversacionId, estado)
+
+// Enviar mensaje humano
+conversacionesAPI.enviarMensajeHumano(conversacionId, contenido)
 ```
 
-## 🎨 Personalización
+#### Base de Conocimiento
+```typescript
+// CRUD completo
+baseConocimientoAPI.listarBaseConocimiento()
+baseConocimientoAPI.crearEntrada(datos)
+baseConocimientoAPI.actualizarEntrada(id, datos)
+baseConocimientoAPI.eliminarEntrada(id)
+```
 
-### Colores y Temas
-Los colores se pueden personalizar modificando las clases de Tailwind en `src/index.css`:
+#### Reportes
+```typescript
+// Obtener reporte por fecha
+reportesAPI.obtenerReporte(fechaInicio, fechaFin)
+```
 
+## 🎨 Sistema de Diseño
+
+### Componentes UI
+- **Button**: Múltiples variantes (primary, secondary, outline, ghost, danger, accent)
+- **Input**: Con soporte para iconos y validación
+- **Card**: Contenedor con header, body y footer
+- **Badge**: Etiquetas para estados y categorías
+- **Modal**: Ventana modal con backdrop
+- **LoadingSpinner**: Indicador de carga
+- **Logo**: Logo de GEMS Innovations
+
+### Colores de Marca
 ```css
-@layer components {
-  .btn-primary {
-    @apply bg-blue-600 hover:bg-blue-700 text-white;
-  }
-}
+--brand-primary: #0C7F9D    /* Azul principal */
+--brand-secondary: #2089A2  /* Azul secundario */
+--brand-accent: #E22977     /* Rosa/Magenta */
 ```
 
-### Componentes
-Todos los componentes están modularizados y pueden ser fácilmente modificados o extendidos.
+### Modo Oscuro
+- Implementado con Tailwind CSS `darkMode: 'class'`
+- Toggle automático con persistencia
+- Todos los componentes adaptados
 
-## 📱 Responsive Design
+## 📱 Diseño Responsivo
 
-La aplicación está optimizada para:
-- **Desktop**: Layout completo con sidebar
-- **Tablet**: Sidebar colapsable
-- **Mobile**: Navegación móvil optimizada
+- **Mobile First**: Diseño optimizado para móviles
+- **Sidebar colapsible**: En dispositivos móviles
+- **Grid adaptativo**: Layout que se ajusta al tamaño de pantalla
+- **Touch friendly**: Interacciones optimizadas para touch
 
 ## 🔮 Próximas Funcionalidades
 
-- [ ] Autenticación de usuarios
-- [ ] Integración real con WhatsApp API
-- [ ] Notificaciones en tiempo real
-- [ ] Chat en vivo entre agentes
-- [ ] Análisis de sentimientos
-- [ ] Integración con CRM
-- [ ] Multiidioma
-- [ ] Temas oscuro/claro
+### Mejoras Planificadas
+- [ ] **Autenticación**: Sistema de login/logout
+- [ ] **Notificaciones**: Alertas en tiempo real
+- [ ] **Archivos**: Soporte para imágenes y documentos
+- [ ] **Integración WhatsApp**: Conexión real con WhatsApp Business API
+- [ ] **Analytics Avanzados**: Métricas más detalladas
+- [ ] **Multiidioma**: Soporte para múltiples idiomas
+
+### Mejoras Técnicas
+- [ ] **Testing**: Jest y React Testing Library
+- [ ] **Storybook**: Documentación de componentes
+- [ ] **PWA**: Progressive Web App
+- [ ] **Performance**: Optimizaciones de rendimiento
+- [ ] **Accessibility**: Mejoras de accesibilidad
 
 ## 🤝 Contribución
 
@@ -200,10 +224,10 @@ La aplicación está optimizada para:
 
 Este proyecto está bajo la Licencia MIT. Ver el archivo `LICENSE` para más detalles.
 
-## 📞 Soporte
+## 👥 Equipo
 
-Para soporte técnico o preguntas, contacta al equipo de desarrollo.
+Desarrollado por **GEMS Innovations** - Soluciones tecnológicas innovadoras.
 
 ---
 
-Desarrollado con ❤️ para revolucionar la atención al cliente con IA.
+**GEMS INNOVATIONS** - Transformando la comunicación empresarial con IA 🤖✨
