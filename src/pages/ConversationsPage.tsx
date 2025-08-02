@@ -1,41 +1,30 @@
-import React, { useState } from 'react';
-import { Activity, Bot, Users, MessageSquare, AlertCircle } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Activity, Users, MessageSquare, AlertCircle } from 'lucide-react';
 import type { Conversation } from '../types';
 import ConversationsList from '../components/ConversationsList';
 import Chat from '../components/Chat';
 import { useBotStatus } from '../hooks/useBotStatus';
+import { useConversations } from '../hooks/useConversations';
+import { BotToggle } from '../components/ui';
 
 const ConversationsPage: React.FC = () => {
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
-  const { botEnabled, healthStatus, stats, loading: botLoading, error: botError, toggleBot } = useBotStatus();
+  const { healthStatus, stats, error: botError } = useBotStatus();
+  const { conversations } = useConversations();
 
-  const handleToggleBot = async () => {
-    await toggleBot(!botEnabled);
-  };
+  // Sincronizar la conversación seleccionada con el estado global actualizado
+  const actualSelectedConversation = selectedConversation 
+    ? conversations.find(conv => conv.id === selectedConversation.id) || selectedConversation
+    : null;
 
   return (
-    <div className="h-[calc(100vh-120px)]">
+    <div className="max-w-7xl mx-auto">
       {/* Status Bar */}
-      <div className="mb-4 p-4 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+      <div className="mb-4 p-3 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-6">
             {/* Bot Status */}
-            <div className="flex items-center space-x-2">
-              <Bot className={`h-5 w-5 ${botEnabled ? 'text-green-500' : 'text-gray-400'}`} />
-              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                Bot: {botEnabled ? 'Active' : 'Inactive'}
-              </span>
-              <button
-                onClick={handleToggleBot}
-                disabled={botLoading}
-                className={`px-3 py-1 text-xs rounded-md transition-colors ${botEnabled
-                  ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 hover:bg-green-200 dark:hover:bg-green-800'
-                  : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'
-                  }`}
-              >
-                {botLoading ? 'Loading...' : botEnabled ? 'Disable' : 'Enable'}
-              </button>
-            </div>
+            <BotToggle variant="bar" />
 
             {/* Health Status */}
             <div className="flex items-center space-x-2">
@@ -76,18 +65,18 @@ const ConversationsPage: React.FC = () => {
         )}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Conversations List */}
-        <div className="lg:col-span-1">
+        <div className="lg:col-span-1 h-[600px]">
           <ConversationsList
             onSelectConversation={setSelectedConversation}
-            selectedConversationId={selectedConversation?.id}
+            selectedConversationId={actualSelectedConversation?.id}
           />
         </div>
 
         {/* Chat Area */}
         <div className="lg:col-span-2">
-          <Chat conversation={selectedConversation} />
+          <Chat conversation={actualSelectedConversation} />
         </div>
       </div>
     </div>

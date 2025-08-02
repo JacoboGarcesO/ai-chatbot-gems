@@ -34,6 +34,10 @@ export interface Message {
   content: string;
   timestamp: string;
   sender_id?: string;
+  type?: string;
+  status?: string;
+  isAiGenerated?: boolean;
+  twilioSid?: string;
 }
 
 export interface KnowledgeBase {

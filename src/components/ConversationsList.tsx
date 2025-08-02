@@ -106,9 +106,9 @@ const ConversationsList: React.FC<ConversationsListProps> = ({
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 h-full flex flex-col">
       {/* Header */}
-      <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+      <div className="p-3 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Conversations</h2>
           <button
@@ -158,7 +158,7 @@ const ConversationsList: React.FC<ConversationsListProps> = ({
       </div>
 
       {/* Conversations List */}
-      <div className="divide-y divide-gray-200 dark:divide-gray-700 max-h-96 overflow-y-auto">
+      <div className="divide-y divide-gray-200 dark:divide-gray-700 flex-1 overflow-y-auto">
         {loading ? (
           <div className="flex items-center justify-center h-32">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 dark:border-blue-400"></div>

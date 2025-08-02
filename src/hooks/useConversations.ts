@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import type { Conversation, Message } from '../types';
+import type { Conversation } from '../types';
 import { conversationsAPI, aiAPI } from '../services/api';
 
 interface UseConversationsOptions {
@@ -18,10 +18,15 @@ export const useConversations = (options: UseConversationsOptions = {}) => {
     try {
       setLoading(true);
       setError(null);
+      
       const data = await conversationsAPI.listConversations(options.filters);
+      
       setConversations(data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error loading conversations');
+      const errorMessage = err instanceof Error ? err.message : 'Error loading conversations';
+      console.error('❌ useConversations: Error cargando conversaciones:', err);
+      console.error('❌ useConversations: Mensaje de error:', errorMessage);
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -29,12 +34,22 @@ export const useConversations = (options: UseConversationsOptions = {}) => {
 
   const toggleAI = useCallback(async (conversationId: string, aiActive: boolean) => {
     try {
+      // Optimistic update - cambiar estado inmediatamente
+      setConversations(prev =>
+        prev.map(conv =>
+          conv.id === conversationId
+            ? { ...conv, ai_active: aiActive }
+            : conv
+        )
+      );
+
       const success = await conversationsAPI.toggleAI(conversationId, aiActive);
-      if (success) {
+      if (!success) {
+        // Si falla, revertir el estado
         setConversations(prev =>
           prev.map(conv =>
             conv.id === conversationId
-              ? { ...conv, ai_active: aiActive }
+              ? { ...conv, ai_active: !aiActive }
               : conv
           )
         );
@@ -42,6 +57,14 @@ export const useConversations = (options: UseConversationsOptions = {}) => {
       return success;
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error toggling AI');
+      // Revertir estado si hay error
+      setConversations(prev =>
+        prev.map(conv =>
+          conv.id === conversationId
+            ? { ...conv, ai_active: !aiActive }
+            : conv
+        )
+      );
       return false;
     }
   }, []);
@@ -127,6 +150,13 @@ export const useConversations = (options: UseConversationsOptions = {}) => {
 
   useEffect(() => {
     loadConversations();
+    
+    // Auto-refresh cada 5 segundos para la lista de conversaciones
+    const interval = setInterval(() => {
+      loadConversations();
+    }, 5000);
+
+    return () => clearInterval(interval);
   }, [loadConversations]);
 
   return {

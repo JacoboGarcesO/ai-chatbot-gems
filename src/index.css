@@ -13,6 +13,23 @@
 }
 
 @layer components {
+  /* Tipografía mejorada para mensajes */
+  .message-content {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-weight: 400;
+    line-height: 1.6;
+    letter-spacing: 0.005em;
+    font-size: 0.875rem;
+  }
+
+  .message-time {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-weight: 400;
+    letter-spacing: 0.01em;
+    font-size: 0.75rem;
+  }
+}
+@layer components {
   .btn-primary {
     @apply bg-brand-primary hover:bg-brand-secondary text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200;
   }
@@ -40,4 +57,191 @@
   .header {
     @apply bg-white dark:bg-dark-800 border-b border-gray-200 dark:border-dark-700;
   }
+
+  /* GEMS Scrollbar - Inspirado en el logo de GEMS con efecto dinámico */
+  .gems-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: #3B82F6 transparent;
+  }
+
+  .gems-scrollbar::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  .gems-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+    border-radius: 4px;
+  }
+
+  /* Efecto dinámico: azul arriba, rosa abajo */
+  .gems-scrollbar::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, 
+      #3B82F6 0%,    /* Azul arriba */
+      #6366F1 25%,   /* Índigo */
+      #8B5CF6 50%,   /* Violeta */
+      #A855F7 75%,   /* Púrpura */
+      #EC4899 100%   /* Rosa abajo */
+    );
+    border-radius: 4px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .gems-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, 
+      #2563EB 0%,    /* Azul más intenso arriba */
+      #4F46E5 25%,   /* Índigo intenso */
+      #7C3AED 50%,   /* Violeta intenso */
+      #9333EA 75%,   /* Púrpura intenso */
+      #DB2777 100%   /* Rosa intenso abajo */
+    );
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4), 0 2px 6px rgba(236, 72, 153, 0.3);
+    transform: scaleX(1.2);
+  }
+
+  .gems-scrollbar::-webkit-scrollbar-thumb:active {
+    background: linear-gradient(180deg, 
+      #1D4ED8 0%,    /* Azul muy intenso */
+      #3730A3 25%,   /* Índigo muy intenso */
+      #5B21B6 50%,   /* Violeta muy intenso */
+      #7E22CE 75%,   /* Púrpura muy intenso */
+      #BE185D 100%   /* Rosa muy intenso */
+    );
+    transform: scaleX(1.1);
+  }
+
+  /* Dark mode scrollbar con efecto dinámico */
+  .dark .gems-scrollbar {
+    scrollbar-color: #60A5FA rgba(55, 65, 81, 0.3);
+  }
+
+  .dark .gems-scrollbar::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, 
+      #60A5FA 0%,    /* Azul claro arriba */
+      #818CF8 25%,   /* Índigo claro */
+      #A78BFA 50%,   /* Violeta claro */
+      #C084FC 75%,   /* Púrpura claro */
+      #F472B6 100%   /* Rosa claro abajo */
+    );
+    border: 1px solid rgba(0, 0, 0, 0.2);
+    box-shadow: 0 2px 8px rgba(96, 165, 250, 0.4);
+  }
+
+  .dark .gems-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, 
+      #93C5FD 0%,    /* Azul muy claro */
+      #A5B4FC 25%,   /* Índigo muy claro */
+      #C4B5FD 50%,   /* Violeta muy claro */
+      #DDD6FE 75%,   /* Púrpura muy claro */
+      #FBCFE8 100%   /* Rosa muy claro */
+    );
+    box-shadow: 0 4px 12px rgba(96, 165, 250, 0.5), 0 2px 6px rgba(244, 114, 182, 0.4);
+  }
+
+  /* GEMS Scrollbar Dinámico - Cambia de color con la posición */
+  .gems-scrollbar-dynamic {
+    scrollbar-width: thin;
+    --scroll-r: 59;
+    --scroll-g: 130;
+    --scroll-b: 246;
+  }
+
+  .gems-scrollbar-dynamic::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  .gems-scrollbar-dynamic::-webkit-scrollbar-track {
+    background: transparent;
+    border-radius: 4px;
+  }
+
+  .gems-scrollbar-dynamic::-webkit-scrollbar-thumb {
+    background: rgb(var(--scroll-r), var(--scroll-g), var(--scroll-b));
+    border-radius: 4px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 2px 8px rgba(var(--scroll-r), var(--scroll-g), var(--scroll-b), 0.3);
+    transition: all 0.2s ease;
+  }
+
+  .gems-scrollbar-dynamic::-webkit-scrollbar-thumb:hover {
+    background: rgb(var(--scroll-r), var(--scroll-g), var(--scroll-b));
+    box-shadow: 0 4px 12px rgba(var(--scroll-r), var(--scroll-g), var(--scroll-b), 0.5);
+    transform: scaleX(1.3);
+    filter: brightness(1.1);
+  }
+
+  /* Dark mode para scrollbar dinámico */
+  .dark .gems-scrollbar-dynamic::-webkit-scrollbar-thumb {
+    background: rgba(var(--scroll-r), var(--scroll-g), var(--scroll-b), 0.8);
+    border: 1px solid rgba(0, 0, 0, 0.2);
+    box-shadow: 0 2px 8px rgba(var(--scroll-r), var(--scroll-g), var(--scroll-b), 0.4);
+  }
+
+  .dark .gems-scrollbar-dynamic::-webkit-scrollbar-thumb:hover {
+    background: rgba(var(--scroll-r), var(--scroll-g), var(--scroll-b), 0.9);
+    box-shadow: 0 4px 12px rgba(var(--scroll-r), var(--scroll-g), var(--scroll-b), 0.6);
+    filter: brightness(1.2);
+  }
+
+  /* Mejora para el scrollbar original con Webkit */
+  .gems-scrollbar::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  .gems-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+    border-radius: 4px;
+  }
+
+  .gems-scrollbar::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, 
+      #3B82F6 0%,    /* Azul arriba */
+      #6366F1 25%,   /* Índigo */
+      #8B5CF6 50%,   /* Violeta */
+      #A855F7 75%,   /* Púrpura */
+      #EC4899 100%   /* Rosa abajo */
+    );
+    border-radius: 4px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+    transition: all 0.3s ease;
+  }
+
+  .gems-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, 
+      #2563EB 0%,    /* Azul más intenso */
+      #4F46E5 25%,   /* Índigo intenso */
+      #7C3AED 50%,   /* Violeta intenso */
+      #9333EA 75%,   /* Púrpura intenso */
+      #DB2777 100%   /* Rosa intenso */
+    );
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4), 0 2px 6px rgba(236, 72, 153, 0.3);
+    transform: scaleX(1.2);
+  }
+
+  /* Dark mode para scrollbar original */
+  .dark .gems-scrollbar::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, 
+      #60A5FA 0%,    /* Azul claro */
+      #818CF8 25%,   /* Índigo claro */
+      #A78BFA 50%,   /* Violeta claro */
+      #C084FC 75%,   /* Púrpura claro */
+      #F472B6 100%   /* Rosa claro */
+    );
+    border: 1px solid rgba(0, 0, 0, 0.2);
+    box-shadow: 0 2px 8px rgba(96, 165, 250, 0.4);
+  }
+
+  .dark .gems-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, 
+      #93C5FD 0%,    /* Azul muy claro */
+      #A5B4FC 25%,   /* Índigo muy claro */
+      #C4B5FD 50%,   /* Violeta muy claro */
+      #DDD6FE 75%,   /* Púrpura muy claro */
+      #FBCFE8 100%   /* Rosa muy claro */
+    );
+    box-shadow: 0 4px 12px rgba(96, 165, 250, 0.5), 0 2px 6px rgba(244, 114, 182, 0.4);
+  }
 }
+

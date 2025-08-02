@@ -2,15 +2,21 @@ import type { Conversation, Message, KnowledgeBase, Report, FinalCustomer } from
 import { API_CONFIG, buildApiUrl } from '../config/api';
 
 // Helper function for API calls with timeout
-const apiCall = async (endpoint: string, options: RequestInit = { headers: { 'Content-Type': 'application/json', 'Allow-Control-Allow-Origin': API_CONFIG.BASE_URL } }) => {
+const apiCall = async (endpoint: string, options: RequestInit = {}) => {
   const url = buildApiUrl(endpoint);
 
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), API_CONFIG.TIMEOUT);
 
+  const defaultHeaders = {
+    'Content-Type': 'application/json',
+  };
+
   try {
     const response = await fetch(url, {
+      method: 'GET',
       headers: {
+        ...defaultHeaders,
         ...options.headers,
       },
       signal: controller.signal,
@@ -20,15 +26,21 @@ const apiCall = async (endpoint: string, options: RequestInit = { headers: { 'Co
     clearTimeout(timeoutId);
 
     if (!response.ok) {
-      throw new Error(`API Error: ${response.status} ${response.statusText}`);
+      const errorText = await response.text();
+      throw new Error(`API Error: ${response.status} ${response.statusText}. ${errorText}`);
     }
 
-    return response.json();
+    const contentType = response.headers.get('content-type');
+    if (contentType && contentType.includes('application/json')) {
+      return response.json();
+    } else {
+      return response.text();
+    }
   } catch (error) {
     clearTimeout(timeoutId);
     if (error instanceof Error) {
       if (error.name === 'AbortError') {
-        throw new Error('Request timeout');
+        throw new Error('Request timeout - The server took too long to respond');
       }
       throw error;
     }
@@ -41,69 +53,93 @@ export const conversationsAPI = {
   // List conversations
   async listConversations(filters?: { status?: string; customer?: string }): Promise<Conversation[]> {
     try {
+      console.log('🔄 API: Iniciando listConversations con filtros:', filters);
+      
       let endpoint = API_CONFIG.ENDPOINTS.CONVERSATIONS;
       const params = new URLSearchParams();
 
       if (filters?.status) {
         params.append('status', filters.status);
+        console.log('🔍 API: Agregando filtro de status:', filters.status);
       }
       if (filters?.customer) {
         params.append('search', filters.customer);
+        console.log('🔍 API: Agregando filtro de customer:', filters.customer);
       }
 
       if (params.toString()) {
         endpoint += `?${params.toString()}`;
       }
 
-      const data = await apiCall(endpoint);
+      console.log('📡 API: Llamando endpoint:', buildApiUrl(endpoint));
+      const response = await apiCall(endpoint);
+      console.log('📥 API: Respuesta recibida:', response);
+
+      // Check if response has the expected structure
+      if (!response.success || !response.conversations) {
+        console.error('❌ API: Estructura de respuesta inválida:', response);
+        throw new Error('Invalid API response format');
+      }
+
+      console.log('📊 API: Procesando', response.conversations.length, 'conversaciones');
 
       // Transform API response to match our Conversation interface
-      return data.map((conv: any) => ({
-        id: conv.phone || conv.id,
+      const transformedConversations = response.conversations.map((conv: any) => ({
+        id: conv._id,
         company_id: 'company1', // Default company ID
-        customer_id: conv.phone || conv.id,
-        status: conv.status || 'open',
+        customer_id: conv.phoneNumber,
+        status: conv.isActive ? 'open' : 'closed',
         ai_active: true, // Default to true for WhatsApp conversations
-        start_timestamp: conv.start_timestamp || new Date().toISOString(),
-        end_timestamp: conv.end_timestamp,
-        ai_classification: conv.classification,
-        ai_summary: conv.summary,
+        start_timestamp: conv.createdAt,
+        end_timestamp: undefined, // Not provided in current API
+        last_message: conv.lastMessage?.text || '',
+        last_timestamp: conv.lastMessage?.timestamp || conv.lastMessageAt,
+        ai_classification: '',
+        ai_summary: '',
         customer: {
-          id: conv.phone || conv.id,
-          name: conv.customer_name || `Cliente ${conv.phone || conv.id}`,
-          phone: conv.phone || conv.id,
-        },
-        last_message: conv.last_message || conv.message,
-        last_timestamp: conv.last_timestamp || conv.timestamp,
+          id: conv.phoneNumber,
+          name: conv.contactName || conv.phoneNumber.replace('whatsapp:', ''),
+          phone: conv.phoneNumber,
+        }
       }));
+
+      console.log('✅ API: Conversaciones transformadas exitosamente:', transformedConversations.length);
+      console.log('📋 API: Primera conversación transformada:', transformedConversations[0]);
+      
+      return transformedConversations;
     } catch (error) {
-      console.error('Error fetching conversations:', error);
-      return [];
+      console.error('❌ API: Error en listConversations:', error);
+      throw error;
     }
   },
 
   // Get conversation by ID (phone number)
   async getConversation(id: string): Promise<Conversation | null> {
     try {
-      const data = await apiCall(`${API_CONFIG.ENDPOINTS.CONVERSATIONS}/${id}`);
+      const response = await apiCall(`${API_CONFIG.ENDPOINTS.CONVERSATIONS}/${encodeURIComponent(id)}`);
 
+      if (!response.success || !response.conversation) {
+        return null;
+      }
+
+      const conv = response.conversation;
       return {
-        id: data.phone || data.id,
+        id: conv._id,
         company_id: 'company1',
-        customer_id: data.phone || data.id,
-        status: data.status || 'open',
+        customer_id: conv.phoneNumber,
+        status: conv.isActive ? 'open' : 'closed',
         ai_active: true,
-        start_timestamp: data.start_timestamp || new Date().toISOString(),
-        end_timestamp: data.end_timestamp,
-        ai_classification: data.classification,
-        ai_summary: data.summary,
+        start_timestamp: conv.createdAt,
+        end_timestamp: undefined,
+        last_message: conv.lastMessage?.text || '',
+        last_timestamp: conv.lastMessage?.timestamp || conv.lastMessageAt,
+        ai_classification: '',
+        ai_summary: '',
         customer: {
-          id: data.phone || data.id,
-          name: data.customer_name || `Cliente ${data.phone || data.id}`,
-          phone: data.phone || data.id,
-        },
-        last_message: data.last_message || data.message,
-        last_timestamp: data.last_timestamp || data.timestamp,
+          id: conv.phoneNumber,
+          name: conv.contactName || conv.phoneNumber.replace('whatsapp:', ''),
+          phone: conv.phoneNumber,
+        }
       };
     } catch (error) {
       console.error('Error fetching conversation:', error);
@@ -114,21 +150,25 @@ export const conversationsAPI = {
   // Get message history
   async getMessageHistory(conversationId: string): Promise<Message[]> {
     try {
-      const data = await apiCall(`${API_CONFIG.ENDPOINTS.CONVERSATIONS}/${conversationId}`);
+      const response = await apiCall(`${API_CONFIG.ENDPOINTS.CONVERSATIONS}/${encodeURIComponent(conversationId)}`);
 
-      // Transform messages from the conversation data
-      if (data.messages && Array.isArray(data.messages)) {
-        return data.messages.map((msg: any, index: number) => ({
-          id: msg.id || index.toString(),
-          conversation_id: conversationId,
-          sender_type: msg.from === conversationId ? 'customer' : 'bot',
-          content: msg.body || msg.content || msg.message,
-          timestamp: msg.timestamp || msg.date || new Date().toISOString(),
-          sender_id: msg.sender_id,
-        }));
+      if (!response.success || !response.messages) {
+        return [];
       }
 
-      return [];
+      // Transform messages from the conversation data
+      return response.messages.map((msg: any) => ({
+        id: msg._id,
+        conversation_id: conversationId,
+        sender_type: msg.type === 'received' ? 'customer' : 'bot',
+        content: msg.text,
+        timestamp: msg.timestamp,
+        sender_id: msg.type === 'received' ? conversationId : 'bot',
+        type: msg.type,
+        status: msg.status,
+        isAiGenerated: msg.metadata?.isAiGenerated || false,
+        twilioSid: msg.twilioSid
+      }));
     } catch (error) {
       console.error('Error fetching message history:', error);
       return [];
@@ -152,6 +192,8 @@ export const conversationsAPI = {
   // Send message as human agent
   async sendHumanMessage(conversationId: string, content: string): Promise<Message> {
     try {
+      console.log('📤 API: Enviando mensaje manual a:', conversationId, 'Contenido:', content);
+      
       const response = await apiCall(API_CONFIG.ENDPOINTS.SEND_MESSAGE, {
         method: 'POST',
         body: JSON.stringify({
@@ -160,18 +202,22 @@ export const conversationsAPI = {
         }),
       });
 
+      console.log('✅ API: Respuesta del envío manual:', response);
+
       const newMessage: Message = {
-        id: Date.now().toString(),
+        id: response.messageId || Date.now().toString(),
         conversation_id: conversationId,
         sender_type: 'human_agent',
         content,
         timestamp: new Date().toISOString(),
         sender_id: 'agent1',
+        type: 'sent',
+        status: 'sent'
       };
 
       return newMessage;
     } catch (error) {
-      console.error('Error sending message:', error);
+      console.error('❌ API: Error enviando mensaje manual:', error);
       throw error;
     }
   },
@@ -179,27 +225,36 @@ export const conversationsAPI = {
   // Send AI-assisted message
   async sendAIMessage(conversationId: string, prompt: string, context?: string): Promise<Message> {
     try {
+      console.log('🤖 API: Enviando mensaje con IA a:', conversationId);
+      console.log('🤖 API: Prompt:', prompt);
+      console.log('🤖 API: Context:', context);
+      
       const response = await apiCall(API_CONFIG.ENDPOINTS.SEND_AI_MESSAGE, {
         method: 'POST',
         body: JSON.stringify({
           to: conversationId,
           prompt,
-          context: context || 'Clínica médica',
+          context: context || 'Asistente de atención al cliente',
         }),
       });
 
+      console.log('✅ API: Respuesta del envío con IA:', response);
+
       const newMessage: Message = {
-        id: Date.now().toString(),
+        id: response.messageId || Date.now().toString(),
         conversation_id: conversationId,
         sender_type: 'bot',
-        content: response.message || prompt,
+        content: response.message || response.text || 'Mensaje enviado con IA',
         timestamp: new Date().toISOString(),
         sender_id: 'ai',
+        type: 'ai-assisted',
+        status: 'sent',
+        isAiGenerated: true
       };
 
       return newMessage;
     } catch (error) {
-      console.error('Error sending AI message:', error);
+      console.error('❌ API: Error enviando mensaje con IA:', error);
       throw error;
     }
   },
@@ -207,12 +262,14 @@ export const conversationsAPI = {
   // Mark conversation as read
   async markAsRead(conversationId: string): Promise<boolean> {
     try {
-      await apiCall(`${API_CONFIG.ENDPOINTS.CONVERSATIONS}/${conversationId}/read`, {
+      console.log('📖 API: Marcando conversación como leída:', conversationId);
+      await apiCall(`${API_CONFIG.ENDPOINTS.CONVERSATIONS}/${encodeURIComponent(conversationId)}/read`, {
         method: 'POST',
       });
+      console.log('✅ API: Conversación marcada como leída');
       return true;
     } catch (error) {
-      console.error('Error marking as read:', error);
+      console.error('❌ API: Error marcando como leída:', error);
       return false;
     }
   },
@@ -220,28 +277,36 @@ export const conversationsAPI = {
   // Search conversations
   async searchConversations(query: string): Promise<Conversation[]> {
     try {
-      const data = await apiCall(`${API_CONFIG.ENDPOINTS.CONVERSATIONS}/search/${encodeURIComponent(query)}`);
+      console.log('🔍 API: Buscando conversaciones con query:', query);
+      const response = await apiCall(`${API_CONFIG.ENDPOINTS.CONVERSATIONS}/search/${encodeURIComponent(query)}`);
 
-      return data.map((conv: any) => ({
-        id: conv.phone || conv.id,
+      console.log('✅ API: Resultados de búsqueda:', response);
+
+      // La API debería retornar el mismo formato que listConversations
+      if (!response.success || !response.conversations) {
+        return [];
+      }
+
+      return response.conversations.map((conv: any) => ({
+        id: conv._id,
         company_id: 'company1',
-        customer_id: conv.phone || conv.id,
-        status: conv.status || 'open',
+        customer_id: conv.phoneNumber,
+        status: conv.isActive ? 'open' : 'closed',
         ai_active: true,
-        start_timestamp: conv.start_timestamp || new Date().toISOString(),
-        end_timestamp: conv.end_timestamp,
-        ai_classification: conv.classification,
-        ai_summary: conv.summary,
+        start_timestamp: conv.createdAt,
+        end_timestamp: undefined,
+        last_message: conv.lastMessage?.text || '',
+        last_timestamp: conv.lastMessage?.timestamp || conv.lastMessageAt,
+        ai_classification: '',
+        ai_summary: '',
         customer: {
-          id: conv.phone || conv.id,
-          name: conv.customer_name || `Cliente ${conv.phone || conv.id}`,
-          phone: conv.phone || conv.id,
-        },
-        last_message: conv.last_message || conv.message,
-        last_timestamp: conv.last_timestamp || conv.timestamp,
+          id: conv.phoneNumber,
+          name: conv.contactName || conv.phoneNumber.replace('whatsapp:', ''),
+          phone: conv.phoneNumber,
+        }
       }));
     } catch (error) {
-      console.error('Error searching conversations:', error);
+      console.error('❌ API: Error en búsqueda de conversaciones:', error);
       return [];
     }
   },
@@ -289,7 +354,7 @@ export const healthAPI = {
     try {
       const data = await apiCall(API_CONFIG.ENDPOINTS.BOT_STATUS);
       return {
-        enabled: data.enabled || false,
+        enabled: data.autoResponseEnabled || false,
       };
     } catch (error) {
       console.error('Error fetching bot status:', error);

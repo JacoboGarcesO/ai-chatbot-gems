@@ -57,14 +57,14 @@ const Chat: React.FC<ChatProps> = ({ conversation }) => {
   }
 
   return (
-    <div className="flex flex-col h-full bg-white dark:bg-dark-800 rounded-lg shadow-sm border border-gray-200 dark:border-dark-700">
+    <div className="flex flex-col h-[500px] bg-white dark:bg-dark-800 rounded-lg shadow-sm border border-gray-200 dark:border-dark-700">
       <ChatHeader
         conversation={conversation}
         onToggleIA={handleToggleIA}
       />
 
       {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 max-h-[350px]">
         {loading ? (
           <LoadingSpinner size="lg" className="h-32" />
         ) : messages.length === 0 ? (

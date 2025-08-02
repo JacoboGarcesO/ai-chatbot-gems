@@ -11,7 +11,7 @@ export const API_CONFIG = {
     ASK_AI: '/api/ask-ai',
     STATS: '/api/stats',
   },
-  TIMEOUT: 10000, // 10 seconds
+  TIMEOUT: 30000, // 30 seconds (increased from 10)
 };
 
 // Helper function to build API URLs
